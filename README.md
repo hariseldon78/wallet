@@ -16,7 +16,7 @@ Attention:
 
 
 ## Installing from setup on Windows:
-https://github.com/terafoundation/wallet/raw/master/Bin/Win64/tera_setup.exe
+~~https://github.com/terafoundation/wallet/raw/master/Bin/Win64/tera_setup.exe~~
 
 
 ## Installing from source code on Windows by steps:
