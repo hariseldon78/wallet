@@ -1,4 +1,4 @@
-﻿# TERA Smart money
+﻿# TERA PLATFORM
 
 * [Light client (zip)](https://github.com/terafoundation/wallet/raw/master/Bin/Light/Tera-light.zip)
 * [Wallet handbook - PDF](https://drive.google.com/file/d/1ej-8jkjKd3p78vdGXWkzzVJq5PTgyxEw/view?usp=sharing)
@@ -28,6 +28,7 @@ https://github.com/terafoundation/wallet/raw/master/Bin/Win64/tera_setup.exe
 ```
 cd ..\..\..\
 git clone https://github.com/terafoundation/wallet.git
+npm install --global --production windows-build-tools
 cd wallet/Source
 npm install
 node set httpport:8080 password:<secret word (no spaces)>
@@ -137,7 +138,7 @@ Default values:
 port:40000
 httpport:8080
 ```
-Lunch: 
+Launch: 
 ```
 cp -a Source SourceTest
 cd SourceTest
