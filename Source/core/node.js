@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -11,7 +11,6 @@
 
 "use strict";
 require("./library.js");
-const RBTree = require('bintrees').RBTree;
 const net = require("net");
 var ConnectIDCount = 1;
 module.exports = class CNode
@@ -113,7 +112,7 @@ module.exports = class CNode
         }
         AddNodeInfo(NODE, "===CreateConnect===")
         CloseSocket(NODE.Socket, "CreateConnect")
-        NODE.SocketStart = (new Date) - 0
+        NODE.SocketStart = Date.now()
         NODE.Socket = net.createConnection(NODE.port, NODE.ip, function ()
         {
             if(NODE.Socket)
@@ -135,7 +134,7 @@ module.exports = class CNode
         let NODE = this;
         AddNodeInfo(NODE, "===CreateReconnection===")
         CloseSocket(NODE.Socket2, "CreateReconnection")
-        NODE.SocketStart = (new Date) - 0
+        NODE.SocketStart = Date.now()
         NODE.Socket2 = net.createConnection(NODE.port, NODE.ip, function ()
         {
             if(NODE.Socket2)
@@ -482,7 +481,7 @@ function SetSocketStatus(Socket,Status)
         if(Status === 100 && Socket.Node)
             Socket.Node.LastTime = GetCurrentTime() - 0;
         Socket.SocketStatus = Status;
-        Socket.TimeStatus = (new Date) - 0;
+        Socket.TimeStatus = Date.now();
     }
 };
 
@@ -492,7 +491,7 @@ function GetSocketStatus(Socket)
     {
         if(Socket.SocketStatus !== 100)
         {
-            var Delta = (new Date) - Socket.TimeStatus;
+            var Delta = Date.now() - Socket.TimeStatus;
             if(Delta > MAX_WAIT_PERIOD_FOR_STATUS)
             {
                 CloseSocket(Socket, "MAX_WAIT_PERIOD_FOR_STATUS = " + Socket.SocketStatus + " time = " + Delta);

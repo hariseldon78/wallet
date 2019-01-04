@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -26,7 +26,7 @@ function SetHTMLDiagramItem(e,t)
 
 function SetDiagramMouseX(e,t)
 {
-    if(e.srcElement && 0 <= e.srcElement.className.indexOf("DIAGRAM") && ("down" === t ? LMouseOn = !0 : "up" === t && (LMouseOn = !1),
+    if(e.srcElement && e.srcElement.className && e.srcElement.className.indexOf && 0 <= e.srcElement.className.indexOf("DIAGRAM") && ("down" === t ? LMouseOn = !0 : "up" === t && (LMouseOn = !1),
     e.preventDefault(), !0 === LMouseOn))
     {
         var a = e.srcElement, i = getMouse(a, e);
@@ -50,8 +50,8 @@ function DrawDiagram(s)
         var d = s.value, t = s.steptime, a = s.startnumber, i = s.starttime, g = s.mouseX;
         if(e)
         {
-            var u = document.getElementById(s.id), m = u.getContext("2d"), h = 50, r = 11;
-            if(s.fillStyle ? m.fillStyle = s.fillStyle : m.fillStyle = "#FFF", m.fillRect(0, 0, u.width, u.height), !(e.length <= 0))
+            var m = document.getElementById(s.id), u = m.getContext("2d"), h = 50, r = 11;
+            if(s.fillStyle ? u.fillStyle = s.fillStyle : u.fillStyle = "#FFF", u.fillRect(0, 0, m.width, m.height), !(e.length <= 0))
             {
                 var v = 0;
                 "**" === s.name.substr(s.name.length - 2) && (v = 1);
@@ -61,47 +61,47 @@ function DrawDiagram(s)
                 void 0 !== s.MaxValue && (o = s.MaxValue), v && o && (o = Math.pow(2, o) / 1e6);
                 var M = o;
                 M <= 0 && (M = 1);
-                var D = (u.width - h - 50) / e.length, c = (u.height - r - 15) / M, w = 0, T = s.line;
-                s.zero && (T = 1, w -= s.zero * c, o -= s.zero, l -= s.zero), o = Math.floor(o + .5), m.lineWidth = T ? 3 : 1 < D ? D : 1;
-                var p = h, S = u.height - 15, I = 0, y = void 0, x = void 0;
-                if(s.red || (s.red = "#A00"), T ? H(e, "line", s.red) : (H(e, "red", s.red), 0 < d && H(e, "green", "#0A0")), m.lineWidth = .5,
-                m.beginPath(), m.strokeStyle = "#000", h--, p--, S += 2, m.moveTo(h, r), m.lineTo(p, S), m.moveTo(p, S + w), m.lineTo(u.width - 10,
-                S + w), m.stroke(), void 0 !== g && (m.beginPath(), m.lineWidth = .5, m.strokeStyle = "#00F", m.moveTo(g, r), m.lineTo(g, S),
-                m.stroke(), void 0 !== y))
+                var c = (m.width - h - 50) / e.length, D = (m.height - r - 15) / M, w = 0, T = s.line;
+                s.zero && (T = 1, w -= s.zero * D, o -= s.zero, l -= s.zero), o = Math.floor(o + .5), u.lineWidth = T ? 3 : 1 < c ? c : 1;
+                var p = h, S = m.height - 15, I = 0, y = void 0, x = void 0;
+                if(s.red || (s.red = "#A00"), T ? H(e, "line", s.red) : (H(e, "red", s.red), 0 < d && H(e, "green", "#0A0")), u.lineWidth = .5,
+                u.beginPath(), u.strokeStyle = "#000", h--, p--, S += 2, u.moveTo(h, r), u.lineTo(p, S), u.moveTo(p, S + w), u.lineTo(m.width - 10,
+                S + w), u.stroke(), void 0 !== g && (u.beginPath(), u.lineWidth = .5, u.strokeStyle = "#00F", u.moveTo(g, r), u.lineTo(g, S),
+                u.stroke(), void 0 !== y))
                 {
-                    m.fillStyle = x;
+                    u.fillStyle = x;
                     var L = "" + Math.floor(y + .5);
-                    m.fillText(L, g - 3, 9);
+                    u.fillText(L, g - 3, 9);
                 }
-                if(m.fillStyle = "#000", m.fillText(Rigth("          " + o, 8), 0, 8), 0 < o && 0 < l)
+                if(u.fillStyle = "#000", u.fillText(Rigth("          " + o, 8), 0, 8), 0 < o && 0 < l)
                 {
-                    var X = S - r, O = l / o, b = X - Math.floor(O * X), A = b;
-                    A < 10 && (A = 10), m.beginPath(), m.moveTo(h - 2, b + r), m.lineTo(h + 2, b + r), m.stroke(), m.strokeStyle = "#00F", m.fillText(Rigth("          " + l,
-                    8), 0, A + r);
+                    var O = S - r, X = l / o, E = O - Math.floor(X * O), b = E;
+                    b < 10 && (b = 10), u.beginPath(), u.moveTo(h - 2, E + r), u.lineTo(h + 2, E + r), u.stroke(), u.strokeStyle = "#00F", u.fillText(Rigth("          " + l,
+                    8), 0, b + r);
                 }
-                var B = 10;
-                e.length < B && (B = e.length);
-                var R, k, E = (u.width - h - 50) / B, P = 1, V = e.length / B;
+                var A = 10;
+                e.length < A && (A = e.length);
+                var B, R, k = (m.width - h - 50) / A, P = 1, V = e.length / A;
                 if(void 0 !== a)
-                    k = 1, R = a;
+                    R = 1, B = a;
                 else
                     if(i)
                     {
-                        k = 1, (R = Math.floor((new Date - i - t * e.length * 1e3) / 1e3)) < 0 && (R = 0), 0 == (P = 10 * Math.floor(V / 10)) && (P = 1);
+                        R = 1, (B = Math.floor((Date.now() - i - t * e.length * 1e3) / 1e3)) < 0 && (B = 0), 0 == (P = 10 * Math.floor(V / 10)) && (P = 1);
                     }
                     else
-                        k = 0, R = new Date - t * e.length * 1e3, p -= 16;
-                for(f = 0; f <= B; f++)
+                        R = 0, B = Date.now() - t * e.length * 1e3, p -= 16;
+                for(f = 0; f <= A; f++)
                 {
                     var z;
-                    if(f === B ? (z = e.length * t, P = 1) : z = 0 === f ? 0 : f * V * t, k)
-                        L = z = Math.floor((R + z) / P) * P;
+                    if(f === A ? (z = e.length * t, P = 1) : z = 0 === f ? 0 : f * V * t, R)
+                        L = z = Math.floor((B + z) / P) * P;
                     else
                     {
-                        var F = new Date(R + 1e3 * z);
+                        var F = new Date(B + 1e3 * z);
                         L = "" + F.getHours(), L += ":" + Rigth("0" + F.getMinutes(), 2), L += ":" + Rigth("0" + F.getSeconds(), 2);
                     }
-                    m.fillText(L, p + f * E, S + 10);
+                    u.fillText(L, p + f * k, S + 10);
                 }
             }
         }
@@ -109,7 +109,7 @@ function DrawDiagram(s)
     
 function H(e,t,a)
     {
-        m.beginPath(), m.moveTo(h, u.height - 15), m.strokeStyle = a;
+        u.beginPath(), u.moveTo(h, m.height - 15), u.strokeStyle = a;
         for(var i = 0; i < e.length; i++)
         {
             var r = e[i];
@@ -123,13 +123,13 @@ function H(e,t,a)
                     continue;
             var o = r;
             d < o && (o = d);
-            var n = Math.floor(o * c), l = Math.floor(r * c);
+            var n = Math.floor(o * D), l = Math.floor(r * D);
             n === l && (n -= 2);
-            var f = p + m.lineWidth / 2 + i * D;
-            if(T || m.moveTo(f, S - n), m.lineTo(f, S - l), g)
+            var f = p + u.lineWidth / 2 + i * c;
+            if(T || u.moveTo(f, S - n), u.lineTo(f, S - l), g)
                 Math.abs(f - g) < Math.abs(I - g) && (I = f, y = r, s.zero && (y -= s.zero), x = a);
         }
-        m.stroke();
+        u.stroke();
     };
 };
 

@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -14,7 +14,6 @@ require("./library.js");
 require("./crypto-library");
 require("./terahashmining");
 const crypto = require('crypto');
-const RBTree = require('bintrees').RBTree;
 const os = require('os');
 global.glStopNode = false;
 const MAX_TIME_NETWORK_TRANSPORT = 1 * 1000;
@@ -52,6 +51,12 @@ module.exports = class CCommon
         global.CountAllNode = CountAll
         if(!global.STAT_MODE)
             return ;
+        var StateTX = DApps.Accounts.DBStateTX.Read(0);
+        if(StateTX)
+        {
+            var Delta = this.CurrentBlockNum - StateTX.BlockNum;
+            ADD_TO_STAT("MAX:DELTA_TX", Delta)
+        }
         var bHasCP = 0;
         if(CHECK_POINT.BlockNum)
         {
@@ -411,4 +416,26 @@ function TestCreateTr()
     var DeltaData = (new Date() - StartData) / 1000;
     ToLog("power=" + power + "  nonce=" + nonce + " TIME=" + deltaTime + " sec" + "  DeltaData=" + DeltaData + " sec");
     return {time1:deltaTime, time2:DeltaData};
+};
+
+function CreateHashBody(body,Num,Nonce)
+{
+    body.writeUIntLE(Num, body.length - 12, 6);
+    body.writeUIntLE(Nonce, body.length - 6, 6);
+    return shaarr(body);
+};
+
+function CreateHashBodyPOWInnerMinPower(arr,BlockNum,MinPow)
+{
+    var nonce = 0;
+    while(1)
+    {
+        var arrhash = CreateHashBody(arr, BlockNum, nonce);
+        var power = GetPowPower(arrhash);
+        if(power >= MinPow)
+        {
+            return nonce;
+        }
+        nonce++;
+    }
 };

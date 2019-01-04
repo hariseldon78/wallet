@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -27,7 +27,7 @@ function CreateHashMinimal(Block,MinerID)
 {
     if(Block.BlockNum < BLOCKNUM_ALGO2)
     {
-        throw "BlockNum<BLOCKNUM_ALGO2";
+        throw "BlockNum < BLOCKNUM_ALGO2";
         return false;
     }
     var PrevHashNum = ReadUint32FromArr(Block.PrevHash, 28);
@@ -174,7 +174,10 @@ function CreatePOWVersion3(Block,bHashPump)
         {
             Block.PowHash = MaxLider.Hash2;
         }
-        Block.Hash = shaarr2(MaxLider.Hash1, MaxLider.Hash2);
+        if(BlockNum >= global.BLOCKNUM_TICKET_ALGO)
+            Block.Hash = sha3arr2(MaxLider.Hash1, MaxLider.Hash2);
+        else
+            Block.Hash = shaarr2(MaxLider.Hash1, MaxLider.Hash2);
         var Power = GetPowPower(Block.PowHash);
         Block.HashCount = (1 << Power) >>> 0;
     }

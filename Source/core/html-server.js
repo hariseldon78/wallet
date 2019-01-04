@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -27,6 +27,7 @@ ContenTypeMap["jpg"] = "image/jpeg";
 ContenTypeMap["html"] = "text/html";
 ContenTypeMap["txt"] = "text/plain";
 ContenTypeMap["csv"] = "text/csv";
+ContenTypeMap["svg"] = "image/svg+xml";
 ContenTypeMap[""] = "application/octet-stream";
 ContenTypeMap["zip"] = "application/zip";
 ContenTypeMap["pdf"] = "application/pdf";
@@ -45,7 +46,9 @@ function DoCommand(response,Type,Path,params,remoteAddress)
             return ;
         }
         response.writeHead(200, {'Content-Type':'text/plain'});
-        var Ret = F(params[1]);
+        var Ret = F(params[1], response);
+        if(Ret === null)
+            return ;
         try
         {
             var Str = JSON.stringify(Ret);
@@ -100,6 +103,7 @@ function DoCommand(response,Type,Path,params,remoteAddress)
                     case "mp3":
                         path = "./HTML/SOUND/" + path;
                         break;
+                    case "svg":
                     case "png":
                     case "gif":
                     case "jpg":
@@ -413,13 +417,13 @@ HTTPCaller.GetWalletInfo = function ()
         Constants[key] = global[key];
     }
     var MaxHistory = WALLET.GetHistoryMaxNum();
-    var Delta = (new Date) - LastTimeGetHashRate;
+    var Delta = Date.now() - LastTimeGetHashRate;
     if(Delta >= 1000)
     {
         if(Delta < 1100)
             HashRateOneSec = global.HASH_RATE - LastHashRate;
         LastHashRate = global.HASH_RATE;
-        LastTimeGetHashRate = (new Date) - 0;
+        LastTimeGetHashRate = Date.now();
     }
     var StateTX = DApps.Accounts.DBStateTX.Read(0);
     var TXBlockNum = 0;
@@ -492,7 +496,7 @@ AddTrMap[0] = "Not add";
 AddTrMap[1] = "OK";
 AddTrMap[2] = "Update OK";
 AddTrMap[3] = "Was send";
-AddTrMap[4] = "Added to time pool";
+AddTrMap[4] = "Added to timer";
 HTTPCaller.SendTransactionHex = function (Params)
 {
     var body = GetArrFromHex(Params.Hex);
@@ -501,22 +505,42 @@ HTTPCaller.SendTransactionHex = function (Params)
     Result.sessionid = sessionid;
     Result.text = AddTrMap[Res];
     var final = false;
-    if(Res < 1 && Res >  - 3)
+    if(Res <= 0 && Res !==  - 3)
         final = true;
     ToLogClient("Send: " + Result.text, GetHexFromArr(shaarr(body)), final);
     return Result;
 };
-HTTPCaller.SendDirectCode = function (StrCommand)
+HTTPCaller.SendDirectCode = function (Params,response)
 {
     var Result;
-    try
+    if(Params.TX)
     {
-        var ret = eval(StrCommand);
-        Result = JSON.stringify(ret, "", 4);
+        if(global.TX_PROCESS && global.TX_PROCESS.RunRPC)
+        {
+            global.TX_PROCESS.RunRPC("EvalCode", Params.Code, function (Err,Ret)
+            {
+                Result = {result:!Err, sessionid:sessionid, text:Ret, };
+                var Str = JSON.stringify(Result);
+                response.end(Str);
+            });
+            return null;
+        }
+        else
+        {
+            Result = "No send to TX";
+        }
     }
-    catch(e)
+    else
     {
-        Result = "" + e;
+        try
+        {
+            var ret = eval(Params.Code);
+            Result = JSON.stringify(ret, "", 4);
+        }
+        catch(e)
+        {
+            Result = "" + e;
+        }
     }
     var Struct = {result:1, sessionid:sessionid, text:Result};
     return Struct;
@@ -860,13 +884,30 @@ HTTPCaller.GetBlockchainStat = function (Param)
     Result.sessionid = sessionid;
     return Result;
 };
-HTTPCaller.GetAllCounters = function ()
+HTTPCaller.GetAllCounters = function (Params,response)
 {
-    var Result = GET_STATS();
+    let Result = GET_STATS();
     Result.result = 1;
     Result.sessionid = sessionid;
     Result.STAT_MODE = global.STAT_MODE;
-    return Result;
+    if(!global.TX_PROCESS || !global.TX_PROCESS.RunRPC)
+        return Result;
+    global.TX_PROCESS.RunRPC("GET_STATS", "", function (Err,Params)
+    {
+        Result.result = !Err;
+        if(Result.result)
+        {
+            for(var name in Params.stats)
+                for(var key in Params.stats[name])
+                {
+                    var Item = Params.stats[name][key];
+                    Result.stats[name][key + "-TX"] = Item;
+                }
+        }
+        var Str = JSON.stringify(Result);
+        response.end(Str);
+    });
+    return null;
 };
 HTTPCaller.SetStatMode = function (flag)
 {
@@ -874,6 +915,7 @@ HTTPCaller.SetStatMode = function (flag)
         StartCommonStat();
     global.STAT_MODE = flag;
     SAVE_CONST(true);
+    global.TX_PROCESS.RunRPC("LOAD_CONST");
     return {result:1, sessionid:sessionid, STAT_MODE:global.STAT_MODE};
 };
 HTTPCaller.ClearStat = function ()
@@ -918,10 +960,35 @@ HTTPCaller.CleanChain = function (Param)
     }
     return {result:0, sessionid:sessionid};
 };
-HTTPCaller.GetArrStats = function (Keys)
+HTTPCaller.GetArrStats = function (Keys,response)
 {
     var arr = GET_STATDIAGRAMS(Keys);
-    return {result:1, sessionid:sessionid, arr:arr, STAT_MODE:global.STAT_MODE};
+    let Result = {result:1, sessionid:sessionid, arr:arr, STAT_MODE:global.STAT_MODE};
+    if(!global.TX_PROCESS || !global.TX_PROCESS.RunRPC)
+        return Result;
+    var Keys2 = [];
+    for(var i = 0; i < Keys.length; i++)
+    {
+        var Str = Keys[i];
+        if(Str.substr(Str.length - 3) == "-TX")
+            Keys2.push(Str.substr(0, Str.length - 3));
+    }
+    global.TX_PROCESS.RunRPC("GET_STATDIAGRAMS", Keys2, function (Err,Arr)
+    {
+        Result.result = !Err;
+        if(Result.result)
+        {
+            for(var i = 0; i < Arr.length; i++)
+            {
+                var Item = Arr[i];
+                Item.name = Item.name + "-TX";
+                Result.arr.push(Item);
+            }
+        }
+        var Str = JSON.stringify(Result);
+        response.end(Str);
+    });
+    return null;
 };
 HTTPCaller.GetBlockChain = function (type)
 {

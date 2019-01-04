@@ -323,7 +323,7 @@
     }
     function RunCode(Code)
     {
-        GetData("SendDirectCode",Code, function (Data)
+        GetData("SendDirectCode",{Code:Code}, function (Data)
         {
             if(Data)
             {

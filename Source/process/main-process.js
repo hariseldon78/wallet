@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -11,6 +11,7 @@
 
 global.PROCESS_NAME = "MAIN";
 const fs = require('fs');
+const os = require('os');
 require("../core/constant");
 const crypto = require('crypto');
 global.START_SERVER = 1;
@@ -19,20 +20,26 @@ global.CODE_PATH = GetNormalPathString(global.CODE_PATH);
 console.log("DATA DIR: " + global.DATA_PATH);
 console.log("PROGRAM DIR: " + global.CODE_PATH);
 require("../core/library");
+ToLog(os.platform() + " (" + os.arch() + ") " + os.release());
 var VerArr = process.versions.node.split('.');
+ToLog("nodejs: " + process.versions.node);
 if(VerArr[0] < 8)
 {
     ToError("Error version of NodeJS=" + VerArr[0] + "  Pls, download new version from www.nodejs.org and update it. The minimum version must be 8");
     process.exit();
 }
 var CServer = require("../core/server");
+setTimeout(function ()
+{
+    TestSignLib(350);
+}, 4000);
 global.glCurNumFindArr = 0;
 global.ArrReconnect = [];
 global.ArrConnect = [];
 var FindList = [{"ip":"91.235.136.81", "port":30005}, {"ip":"149.154.70.158", "port":30000}, ];
 if(global.LOCAL_RUN)
 {
-    FindList = [{"ip":"127.0.0.1", "port":50000}, {"ip":"127.0.0.1", "port":50001}];
+    FindList = [{"ip":"127.0.0.1", "port":50001}, {"ip":"127.0.0.1", "port":50002}];
 }
 else
     if(global.TEST_NETWORK)
@@ -173,6 +180,8 @@ function StartAllProcess()
             WALLET.DBHistory.Close();
     }, 500);
 };
+var GlobalRunID = 0;
+var GlobalRunMap = {};
 
 function StartChildProcess(Item)
 {
@@ -212,28 +221,59 @@ function StartChildProcess(Item)
             {
                 if(ITEM.LastAlive < Date.now())
                     ITEM.LastAlive = Date.now();
-                if(msg.cmd === "log")
+                if(msg.cmd === "retcall")
                 {
-                    ToLog(msg.message);
+                    var F = GlobalRunMap[msg.id];
+                    if(F)
+                    {
+                        delete GlobalRunMap[msg.id];
+                        F(msg.Err, msg.Params);
+                    }
                 }
                 else
-                    if(msg.cmd === "ToLogClient")
+                    if(msg.cmd === "log")
                     {
-                        ToLogClient(msg.Str, msg.StrKey, msg.bFinal);
+                        ToLog(msg.message);
                     }
                     else
-                        if(msg.cmd === "online")
+                        if(msg.cmd === "ToLogClient")
                         {
-                            ToLog("RUNING " + ITEM.Name + " : " + msg.message + " pid: " + ITEM.Worker.pid);
+                            ToLogClient(msg.Str, msg.StrKey, msg.bFinal);
                         }
                         else
-                            if(ITEM.OnMessage)
+                            if(msg.cmd === "online")
                             {
-                                ITEM.OnMessage(msg);
+                                ToLog("RUNING " + ITEM.Name + " : " + msg.message + " pid: " + ITEM.Worker.pid);
                             }
+                            else
+                                if(ITEM.OnMessage)
+                                {
+                                    ITEM.OnMessage(msg);
+                                }
             });
         }
     }, 500);
+    ITEM.RunRPC = function (Name,Params,F)
+    {
+        if(!ITEM.Worker)
+            return ;
+        if(F)
+        {
+            GlobalRunID++;
+            try
+            {
+                ITEM.Worker.send({cmd:"call", id:GlobalRunID, Name:Name, Params:Params});
+                GlobalRunMap[GlobalRunID] = F;
+            }
+            catch(e)
+            {
+            }
+        }
+        else
+        {
+            ITEM.Worker.send({cmd:"call", id:0, Name:Name, Params:Params});
+        }
+    };
 };
 global.StopChildProcess = function ()
 {
@@ -374,7 +414,6 @@ function RunStopPOWProcess(Mode)
         Memory = global.SIZE_MINING_MEMORY;
     else
     {
-        const os = require('os');
         Memory = os.freemem() - (512 + GetCountMiningCPU() * 100) * 1024 * 1014;
         if(Memory < 0)
         {
@@ -554,7 +593,7 @@ function RunServer()
                 var item = arr[i];
                 if(!item.internal && item.mac !== "00:00:00:00:00:00")
                 {
-                    ServerPrivKey = sha3(global.SERVER_PRIVATE_KEY_HEX + ":" + item.mac);
+                    ServerPrivKey = sha3(global.SERVER_PRIVATE_KEY_HEX + ":" + item.mac + ":" + global.START_PORT_NUMBER);
                     break main;
                 }
             }
@@ -621,14 +660,6 @@ function RunOnUpdate()
         }
         else
         {
-            if(CurNum < 781)
-            {
-                CheckRewriteAllTr2(100000, "2502F4136C778545135E19A5DDCAFAE48BDC60707A8B8CC455E230BC1CC211E4", 14615000, "5F2D5096D1BFA1BE1161B0E8FA56FAA323220DB5B2262D240FF304007B7ADDA0");
-            }
-            if(CurNum < 785)
-            {
-                CheckRewriteAllTr(14710000, "388F5A6A9B3D7845A1E4CBFC674D9CDAB3AA90493703292D01A390CE1F319EF1");
-            }
         }
         ToLog("UPDATER Finish");
     }
@@ -719,6 +750,8 @@ function Fork(Path,ArrArgs)
     ArrArgs.push("HOSTING:" + global.HTTP_HOSTING_PORT);
     if(!global.USE_PARAM_JS)
         ArrArgs.push("NOPARAMJS");
+    if(global.NWMODE)
+        ArrArgs.push("NWMODE");
     glPortDebug++;
     var execArgv = [];
     var Worker = child_process.fork(Path, ArrArgs, {execArgv:execArgv});
@@ -773,4 +806,32 @@ function RecreateAccountHashDB()
         global.UpdateMode = 0;
         fs.unlinkSync(fname);
     }
+};
+
+function TestSignLib(MaxTime)
+{
+    var hash = Buffer.from(GetArrFromHex("A6B0914953F515F4686B2BA921B8FAC66EE6A6D3E317B43E981EBBA52393BFC6"));
+    var PubKey = Buffer.from(GetArrFromHex("026A04AB98D9E4774AD806E302DDDEB63BEA16B5CB5F223EE77478E861BB583EB3"));
+    var Sign = Buffer.from(GetArrFromHex("5D5382C65E4C1E8D412D5F30F87B8F72F371E9E4FC170761BCE583A961CF44966F92B38D402BC1CBCB7567335051A321B93F4E32112129AED4AB602E093A1187"));
+    var startTime = process.hrtime();
+    for(var Num = 0; Num < 1000; Num++)
+    {
+        var Result = secp256k1.verify(hash, Sign, PubKey);
+        if(!Result)
+        {
+            ToError("Error test sign");
+            process.exit(0);
+        }
+        var Time = process.hrtime(startTime);
+        var deltaTime = Time[0] * 1000 + Time[1] / 1e6;
+        if(deltaTime > MaxTime)
+        {
+            ToLog("*************** WARNING: VERY SLOW LIBRARY: secp256k1 ***************");
+            ToLog("You can only process: " + Num + " transactions");
+            ToLog("Install all dependent packages and run the installation command:\ncd Source/node_modules/secp256k1 \nnode-gyp build");
+            return 0;
+        }
+    }
+    ToLog("TestSignLib: " + Math.trunc(deltaTime) + " ms");
+    return 1;
 };

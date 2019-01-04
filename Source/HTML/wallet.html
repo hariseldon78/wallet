@@ -32,10 +32,9 @@
 
 <script type="text/javascript" src="/HTML/JS/wallet-lib.js"></script>
 <script type="text/javascript" src="/HTML/JS/wallet-node.js"></script>
+<script type="text/javascript" src="/HTML/JS/terahashlib.js"></script>
 
 
-<!--<script type="text/javascript" src="/HTML/JS/terahashlib.js"></script>-->
-<!--<script type="text/javascript" src="/HTML/JS/wallet-web.js"></script>-->
 
 
 
@@ -99,7 +98,7 @@
     {
         var arr = new Uint8Array(32);
         window.crypto.getRandomValues(arr);
-        var Str=GetHexFromArr(arr);
+        var Str=GetHexFromArr(sha3(arr));
 
         document.getElementById("idKeyNew").value=Str;
         SetVisibleEditKeys(1);
@@ -455,10 +454,15 @@
         MaxBlockNum=GetCurrentBlockNumByTime();
 
         var StrVersion=" 0."+Data.VersionNum;
+        if(Data.CODE_VERSION.VersionNum && Data.VersionNum<Data.CODE_VERSION.VersionNum)
+        {
+            StrVersion=StrVersion+"/0."+Data.CODE_VERSION.VersionNum;
+        }
+
         //SetTitle((MaxBlockNum%100)+" "+Name+StrVersion);
         SetTitle(Name+StrVersion);
 
-        //if(Data.RelayMode || !Data.CurBlockNum || !Data.BlockNumDB || Data.CurBlockNum>Data.BlockNumDB+BLOCK_PROCESSING_LENGTH*2)
+
         if(Data.RelayMode && Data.CurBlockNum>Data.BlockNumDB+BLOCK_PROCESSING_LENGTH*2)
         {
             CanSendTransaction=0;
@@ -491,9 +495,6 @@
         MaxAccID=Data.MaxAccID;
         MaxDappsID=Data.MaxDappsID;
         MaxActNum=Data.MaxActNum;
-        //MaxBlockNum=Data.CurBlockNum;
-//        if(MaxBlockNum!==Data.CurBlockNum)
-//            SetStatus("Client num="+MaxBlockNum+"  server num="+Data.CurBlockNum)
 
 
         //min_power_pow_acc_create=Data.MIN_POWER_POW_ACC_CREATE+3;
@@ -506,14 +507,15 @@
         HistoryMaxNum=Data.HistoryMaxNum;
 
         DeltaTime=DeltaTime.toFixed(3);
-        //var Str="DB: <B>"+Data.BlockNumDB+ "</B>  TX: <B>"+Data.TXBlockNum + "</B>  New: <B>"+Data.CurBlockNum+"</B> Time delta:<B>"+DeltaTime+" sec</B> Wallet ver:"+"<B>"+StrVersion+"</B>";
+
         var DeltaDB=Data.CurBlockNum-Data.BlockNumDB;
         if(DeltaDB<10)
             DeltaDB="&nbsp;"+DeltaDB;
         var DeltaTX=Data.CurBlockNum-Data.TXBlockNum;
         if(DeltaTX<10)
             DeltaTX="&nbsp;"+DeltaTX;
-        var Str="<font face='monospace'>Block: <B>"+Data.CurBlockNum+"</B>  DB delta:<b>"+DeltaDB+"</b>  TX delta:<b>"+DeltaTX + "</b> Time delta:<B>"+DeltaTime+" sec</B> Wallet ver:"+"<B>"+StrVersion+"</B></font>";
+
+         var Str="<font face='monospace'>Block: <B>"+Data.CurBlockNum+"</B>  DB delta:<b>"+DeltaDB+"</b>  TX delta:<b>"+DeltaTX + "</b> Time delta:<B>"+DeltaTime+" sec</B> Wallet ver:"+"<B>"+StrVersion+"</B></font>";
 
         document.getElementById("idCurrentBlockNum").innerHTML=Str;
 
@@ -581,7 +583,6 @@
 
         if(Data.CODE_VERSION.VersionNum && Data.VersionNum<Data.CODE_VERSION.VersionNum)
         {
-            SetTitle(Name+" 0."+Data.VersionNum+"/"+Data.CODE_VERSION.VersionNum);
             $("idAutoUpdate").className="checkbox checkbox_alert";
         }
         else
@@ -1406,7 +1407,7 @@
 
     <DIV id="TabHistory" style="display: none">
         <DIV id="idPaginationHistory" style="display: none">
-            Search:<INPUT type="search" id="idViewHistoryFilter" value="" onchange="ViewCurrent(DefHistory)">
+            Search:<INPUT type="search" id="idViewHistoryFilter" value="" onchange="CheckNewSearch(DefHistory); ViewCurrent(DefHistory)">
             <INPUT type="button" onclick="ViewBegin(DefHistory)" class="btdoitm bt" value="|<-">
             <INPUT type="button" onclick="ViewPrev(DefHistory)" class="btdoit bt" value="<< Prev">
             <INPUT type="number" id="idViewHistoryNum" style="text-align: center" value="0" min=0 max=1000000000 onchange="ViewCurrent(DefHistory)">
@@ -1520,7 +1521,7 @@
         <BR>
         <DIV id="idPaginationDapps" style="display: block">
             <!--<DIV id="view_header" >DAPPS</DIV><BR>-->
-            Search:<INPUT type="search" id="idViewDappsFilter" value="" onchange="ViewCurrent(DefDapps)">
+            Search:<INPUT type="search" id="idViewDappsFilter" value="" onchange="CheckNewSearch(DefDapps); ViewCurrent(DefDapps)">
             Category:
             <select size="1" id="idCategory" onchange="ViewCurrent(DefDapps)">
             </select>
@@ -1590,7 +1591,7 @@
         <DIV id="idPaginationAccount" style="display: none">
             <HR>
             <DIV id="view_header" >Accounts</DIV><BR>
-            JS:<INPUT type="search" id="idViewAccountFilter" value="" onchange="ViewCurrent(DefAccounts)">
+            Search:<INPUT type="search" id="idViewAccountFilter" value="" onchange="CheckNewSearch(DefAccounts); ViewCurrent(DefAccounts)">
             <INPUT type="button" onclick="ViewBegin(DefAccounts)" class="btdoitm bt" value="|<-">
             <INPUT type="button" onclick="ViewPrev(DefAccounts)" class="btdoit bt" value="<< Prev">
             <INPUT type="number" id="idViewAccountNum" style="text-align: center" value="0" min=0 max=1000000000 onchange="ViewCurrent(DefAccounts)">

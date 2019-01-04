@@ -315,6 +315,28 @@
             //NodeNew.guid=NodeOld.guid;
             NodeNew.View=NodeOld.View;
             NodeNew.Color=NodeOld.Color;
+
+            if(!NodeOld.TransferBlockNumFixPrev)
+                NodeOld.TransferBlockNumFixPrev=0;
+            if(!NodeOld.TransferSizePrev)
+                NodeOld.TransferSizePrev=0;
+
+
+            NodeNew.TransferBlockNumFixPrev=NodeOld.TransferBlockNumFixPrev;
+            NodeNew.TransferSizePrev=NodeOld.TransferSizePrev;
+            NodeNew.SizeView=NodeOld.SizeView;
+
+
+            if(NodeNew.TransferBlockNumFixPrev!==NodeNew.TransferBlockNumFix)
+            {
+                NodeNew.SizeView=NodeNew.TransferSize-NodeNew.TransferSizePrev;
+                if(!NodeNew.TransferBlockNumFixPrev)
+                    NodeNew.SizeView=0;
+                NodeNew.TransferBlockNumFixPrev=NodeNew.TransferBlockNumFix;
+                NodeNew.TransferSizePrev=NodeNew.TransferSize;
+            }
+
+
         }
     }
 
@@ -328,6 +350,7 @@
 
         var arrBlocks=[];
 
+        var StartDrawNum=MaxBlockNum-2;
 
         //Основной блокчейн
         var CountBlock=0;
@@ -340,7 +363,7 @@
                 continue;
 
             CountBlock++;
-            if(CalcDrawBlock(obj,ctx,MaxBlockNum-2,"H",DY,NodeNum,Block,100,color))
+            if(CalcDrawBlock(obj,ctx,StartDrawNum,"H",DY,NodeNum,Block,100,color))
             {
                 LastBlock=Block;
                 arrBlocks.push(Block);
@@ -355,17 +378,17 @@
         //ноды
         if(ArrHotNodes.length)
         {
-            var SumTransferSize=0;
+            var SumSizeView=0;
             for(var i=0;i<ArrHotNodes.length;i++)
             {
                 var Node=ArrHotNodes[i];
-                if(!Node.TransferSize)
-                    Node.TransferSize=0;
-                SumTransferSize+=Node.TransferSize;
+                if(!Node.SizeView)
+                    Node.SizeView=0;
+                SumSizeView+=Node.SizeView;
             }
-            var AvgTransferSize=SumTransferSize/ArrHotNodes.length;
-            if(!AvgTransferSize)
-                AvgTransferSize=1;
+            var AvgSizeView=SumSizeView/ArrHotNodes.length;
+            if(!AvgSizeView)
+                AvgSizeView=1;
 
             for(var i=0;i<ArrHotNodes.length;i++)
             {
@@ -381,7 +404,10 @@
 
                     var TransferBlockNum=Node.TransferBlockNum;
                     if(Node.TransferBlockNumFix!==CurBlockNum)
+                    {
+                        Node.SizeView=0;
                         continue;
+                    }
 
 
                     var Block=NodeParam.MapBlockChain[Node.TransferBlockNum];
@@ -395,7 +421,7 @@
 
                     //линии
                     ctx.strokeStyle = Node.Color.color1;//color;
-                    ctx.lineWidth=Math.log2(1+Node.TransferSize/AvgTransferSize/2);
+                    ctx.lineWidth=Math.log2(1+Node.SizeView/AvgSizeView/2);
                     if(ctx.lineWidth<0.2)
                         ctx.lineWidth=0.2;
                     if(ctx.lineWidth>6)
@@ -437,7 +463,7 @@
                     if(!Block || Block.BlockNum<MinBlockNum || Block.BlockNum>MaxBlockNum)
                         break;
 
-                    if(CalcDrawBlock(obj,ctx,MaxBlockNum,"B",DY,Block.chainid,Block,MaxCount,color))
+                    if(CalcDrawBlock(obj,ctx,StartDrawNum,"B",DY,Block.chainid,Block,MaxCount,color))
                     {
                         bWas=true;
                         arrBlocks.push(Block);
@@ -461,7 +487,7 @@
                     continue;
 
                 //Заголовок цепочки
-                if(CalcDrawBlock(obj,ctx,MaxBlockNum,"C",DY,Chain.id,Chain,MaxCount,color))//!bWas &&
+                if(CalcDrawBlock(obj,ctx,StartDrawNum,"C",DY,Chain.id,Chain,MaxCount,color))//!bWas &&
                 {
                     arrBlocks.push(Chain);
                 }
@@ -703,7 +729,7 @@
             ctx.fillText("T:"+Block.TransferCount,x+2,y);
 
             y+=16;
-            ctx.fillText("Kb:"+Math.trunc(10*Block.TransferSize/1024)/10,x+2,y);
+            ctx.fillText("Kb:"+Math.trunc(10*Block.SizeView)/10,x+2,y);
 
 //            y+=20;
 //            if(Block.TransferBlockNum)
@@ -1004,8 +1030,9 @@
             return;
 
         x-=100;
-        if(y<310)
-            y=310;
+        y+=10;
+//        if(y<310)
+//            y=310;
 
         var element = document.getElementById("b"+name);
         if(!element)
@@ -1079,7 +1106,7 @@
         }
         else
         {
-            Str +="\nBlock:"+Block.TransferBlockNum;
+            Str +="\nBlock"+Block.TransferBlockNum;
 
             Block.Info=undefined;
             Block.addrStr=Block.addrStr.substr(0,12)+"...";
@@ -1241,14 +1268,8 @@
 
         if(ResDataArr.length)
         {
-            var MaxNum=0;
-            for(var n=0;n<ResDataArr.length;n++)
-            {
-                var Data=ResDataArr[n];
-                if(Data && Data.CurrentBlockNum>MaxNum)
-                    MaxNum=Data.CurrentBlockNum;
-            }
-
+            var Data=ResDataArr[0];
+            var MaxNum=Data.CurrentBlockNum;
             nWork++;
 
             InitDrawPaper();

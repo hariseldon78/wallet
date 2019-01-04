@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -15,6 +15,22 @@ function $(e)
     return document.getElementById(e);
 };
 var ServerHTTP, MainServer;
+
+function IsIPAddres(e)
+{
+    var t = e.split(".");
+    if(3 !== t.length)
+        return 0;
+    for(var r = 0; r < t.length; r++)
+        if(t[r] !== "" + ParseNum(t[r]))
+            return 0;
+    return 1;
+};
+
+function GetProtocolServerPath(e)
+{
+    return 443 === e.port ? "https://" + e.ip : 80 === e.port ? "http://" + e.ip : "http://" + e.ip + ":" + e.port;
+};
 
 function SUM_TO_STRING(e,t,r)
 {
@@ -294,9 +310,9 @@ window.nw ? (window.Open = function (e,t,r,n)
         window.open(e);
 }, window.GetData = function (e,t,r)
 {
-    if("http:" !== e.substr(0, 5))
+    if("http" !== e.substr(0, 4))
         if("/" !== e.substr(0, 1) && (e = "/" + e), MainServer)
-            e = "http://" + MainServer.ip + ":" + MainServer.port + e;
+            e = GetProtocolServerPath(MainServer) + e;
         else
             if(!window.location.hostname)
                 return ;
@@ -360,6 +376,11 @@ function ViewGrid(e,t,r,n,a)
     {
         e && e.result && SetGridData(e.arr, r, a, n);
     });
+};
+
+function CheckNewSearch(e)
+{
+    $(e.FilterName).value && ($(e.NumName).value = "0");
 };
 
 function ViewCurrent(e,t,r)
@@ -479,7 +500,7 @@ function ClearTable(e)
 
 function RetOpenBlock(e,t)
 {
-    return e && t ? '<button onclick="ViewTransaction(' + e + ')" class="openblock">' + e + "</button>" : e;
+    return e && t ? '<button onclick="ViewTransaction(' + e + ')" class="openblock">' + e + "</button>" : "<B>" + e + "</B>";
 };
 
 function RetBool(e)
@@ -710,34 +731,27 @@ MapCategory[42] = "Exchanges", MapCategory[43] = "Security", MapCategory[44] = "
 MapCategory[46] = "Insurance";
 var glTrSendNum = 0;
 
-function SendTransaction(i,u,l,c)
+function SendTransaction(o,i,u,l)
 {
-    if(16e3 < i.length)
-        return window.SetStatus && SetStatus("Error length transaction =" + i.length + " (max size=16000)"), void (c && c(1, u, i));
+    if(16e3 < o.length)
+        return window.SetStatus && SetStatus("Error length transaction =" + o.length + " (max size=16000)"), void (l && l(1, i, o));
     glTrSendNum++, function r(e,t)
     {
-        var n = glTrSendNum;
-        var a = t;
-        e && (a = CreateHashBodyPOWInnerMinPower(i, l));
-        var o = GetHexFromArr(i);
-        GetData("SendTransactionHex", {Hex:o}, function (e)
+        var n = t;
+        e && (n = CreateHashBodyPOWInnerMinPower(o, u));
+        var a = GetHexFromArr(o);
+        GetData("SendTransactionHex", {Hex:a}, function (e)
         {
             if(e)
             {
-                var t = GetHexFromArr(shaarr(i));
+                var t = GetHexFromArr(shaarr(o));
                 if(window.SetStatus && SetStatus("Send '" + t.substr(0, 16) + "' result:" + e.text), "Not add" === e.text)
-                    r(1, a + 1);
+                    r(1, n + 1);
                 else
-                    if("Bad time" === e.text)
-                        window.SetStatus && SetStatus("Next send..."), setTimeout(function ()
-                        {
-                            n === glTrSendNum && r(0, a);
-                        }, 100);
-                    else
-                    {
-                        var t = GetHexFromArr(shaarr(i));
-                        MapSendTransaction[t] = u, c && c(0, u, i);
-                    }
+                {
+                    var t = GetHexFromArr(shaarr(o));
+                    MapSendTransaction[t] = i, l && l(0, i, o);
+                }
             }
         });
     }(1, 0);

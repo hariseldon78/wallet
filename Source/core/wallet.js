@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -12,7 +12,6 @@
 "use strict";
 const fs = require('fs');
 const crypto = require('crypto');
-const RBTree = require('bintrees').RBTree;
 require("./library");
 require("./crypto-library");
 const WalletPath = "WALLET";

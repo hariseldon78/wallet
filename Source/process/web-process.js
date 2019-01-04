@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -43,6 +43,21 @@ process.on('message', function (msg)
             break;
         case "Exit":
             process.exit(0);
+            break;
+        case "call":
+            var Err = 0;
+            var Ret;
+            try
+            {
+                Ret = global[msg.Name](msg.Params);
+            }
+            catch(e)
+            {
+                Err = 1;
+                Ret = "" + e;
+            }
+            if(msg.id)
+                process.send({cmd:"retcall", id:msg.id, Err:Err, Params:Ret});
             break;
         case "Stat":
             ADD_TO_STAT(msg.Name, msg.Value);
@@ -95,10 +110,45 @@ require("../core/html-server");
 require("../core/transaction-validator");
 global.STAT_MODE = 1;
 setInterval(PrepareStatEverySecond, 1000);
-var HostingServer = http.createServer(function (request,response0)
+var HostingServer;
+if(global.HTTPS_HOSTING_DOMAIN)
 {
-    if(!request.headers)
-        return ;
+    var file_sert = GetDataPath("sertif.lst");
+    var greenlock = require('greenlock').create({version:'draft-12', server:'https://acme-v02.api.letsencrypt.org/directory', configDir:GetDataPath('tmp'),
+    });
+    var redir = require('redirect-https')();
+    require('http').createServer(greenlock.middleware(redir)).listen(80);
+    if(fs.existsSync(file_sert))
+    {
+        var certs = LoadParams(file_sert, {});
+        var tlsOptions = {key:certs.privkey, cert:certs.cert + '\r\n' + certs.chain};
+        HostingServer = require('https').createServer(tlsOptions, MainHTTPFunction);
+        RunListenServer();
+    }
+    else
+    {
+        ToLog("Start get new SERT");
+        var opts = {domains:[global.HTTPS_HOSTING_DOMAIN], email:'progr76@gmail.com', agreeTos:true, communityMember:true, };
+        greenlock.register(opts).then(function (certs)
+        {
+            SaveParams(file_sert, certs);
+            var tlsOptions = {key:certs.privkey, cert:certs.cert + '\r\n' + certs.chain};
+            HostingServer = require('https').createServer(tlsOptions, MainHTTPFunction);
+            RunListenServer();
+        }, function (err)
+        {
+            ToError(err);
+        });
+    }
+}
+else
+{
+    HostingServer = http.createServer(MainHTTPFunction);
+    RunListenServer();
+}
+
+function MainHTTPFunction(request,response0)
+{
     if(!request.socket || !request.socket.remoteAddress)
         return ;
     let RESPONSE = response0;
@@ -160,28 +210,27 @@ var HostingServer = http.createServer(function (request,response0)
     {
         DoCommandNew(response, Type, Path, Params);
     }
-});
-HostingServer.on('error', function (err)
-{
-    if(err.code === 'EADDRINUSE')
-    {
-        ToLogClient('Port ' + global.HTTP_HOSTING_PORT + ' in use, retrying...');
-        if(HostingServer.Server)
-            HostingServer.Server.close();
-        setTimeout(function ()
-        {
-            RunListenServer();
-        }, 5000);
-        return ;
-    }
-    ToError("H##6");
-    ToError(err);
-});
-RunListenServer();
+};
 var bWasRun = 0;
 
 function RunListenServer()
 {
+    HostingServer.on('error', function (err)
+    {
+        if(err.code === 'EADDRINUSE')
+        {
+            ToLogClient('Port ' + global.HTTP_HOSTING_PORT + ' in use, retrying...');
+            if(HostingServer.Server)
+                HostingServer.Server.close();
+            setTimeout(function ()
+            {
+                RunListenServer();
+            }, 5000);
+            return ;
+        }
+        ToError("H##6");
+        ToError(err);
+    });
     ToLogClient("Prepare to run WEB-server on port: " + global.HTTP_HOSTING_PORT);
     HostingServer.listen(global.HTTP_HOSTING_PORT, '0.0.0.0', function ()
     {
@@ -272,11 +321,18 @@ function DoCommandNew(response,Type,Path,Params)
                     case "mp3":
                         Name = PrefixPath + "/SOUND/" + Name;
                         break;
+                    case "svg":
                     case "png":
                     case "gif":
                     case "jpg":
                     case "ico":
                         Name = PrefixPath + "/PIC/" + Name;
+                        break;
+                    case "eot":
+                    case "woff":
+                    case "woff2":
+                    case "ttf":
+                        Name = PrefixPath + "/FONTS/" + Name;
                         break;
                     default:
                         Name = PrefixPath + "/" + Name;

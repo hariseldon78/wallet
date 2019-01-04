@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -10,22 +10,15 @@
 */
 
 "use strict";
-const RBTree = require('bintrees').RBTree;
 const MAX_MESSAGE_COUNT = 1000;
 module.exports = class CMessages extends require("./transaction-validator")
 {
     constructor(SetKeyPair, RunIP, RunPort, UseRNDHeader, bVirtual)
     {
         super(SetKeyPair, RunIP, RunPort, UseRNDHeader, bVirtual)
-        this.TreePoolTr = new RBTree(CompareItemTimePow)
         this.MemPoolMsg = []
         for(var i = 0; i <= MAX_LEVEL_SPECIALIZATION; i++)
             this.MemPoolMsg[i] = new RBTree(CompareItemTimePow)
-        this.TimePoolTransaction = []
-        if(!global.ADDRLIST_MODE && !this.VirtualMode)
-        {
-            setInterval(this.CheckTimePoolTransaction.bind(this), 50)
-        }
     }
     AddMsgToQuote(Msg)
     {
@@ -61,12 +54,12 @@ module.exports = class CMessages extends require("./transaction-validator")
     }
     CheckCreateMsgHASH(Msg)
     {
-        if(!Msg.hashPow)
+        if(!Msg.HashPow)
         {
-            Msg.HASH = shaarr(Msg.body)
-            Msg.hashPow = GetHashWithValues(Msg.HASH, Msg.nonce, Msg.time)
-            Msg.power = GetPowPower(Msg.hashPow)
-            Msg.TimePow = Msg.time + Msg.power
+            Msg.HASH = sha3(Msg.body)
+            Msg.HashPow = GetHashWithValues(Msg.HASH, Msg.nonce, Msg.time)
+            Msg.power = GetPowPower(Msg.HashPow)
+            Msg.TimePow = Msg.time + Msg.power - Math.log2(Msg.body.length / 128)
             Msg.Level = AddrLevelArr(this.addrArr, Msg.addrArr)
             if(Msg.Level >= MAX_LEVEL_SPECIALIZATION)
                 Msg.Level = MAX_LEVEL_SPECIALIZATION
@@ -74,7 +67,7 @@ module.exports = class CMessages extends require("./transaction-validator")
     }
     CreateMsgFromBody(Body, ToAddr)
     {
-        var HASH = shaarr(Body);
+        var HASH = sha3(Body);
         var Msg = {HASH:HASH, body:Body, addrArr:ToAddr, nonce:CreateNoncePOWExtern(HASH, this.CurrentBlockNum, 3 * (1 << MIN_POWER_POW_MSG)),
             time:this.CurrentBlockNum, };
         this.CheckCreateMsgHASH(Msg)
@@ -168,34 +161,32 @@ module.exports = class CMessages extends require("./transaction-validator")
         var Res = this.IsValidTransaction(Tr, this.CurrentBlockNum);
         if(Res <= 0 && Res !==  - 3)
             return Res;
-        if(Res ===  - 3)
+        if(Tr.num < this.CurrentBlockNum)
+            return 0;
+        var delta = Tr.num - this.CurrentBlockNum;
+        if(delta > 3)
         {
-            var delta = Tr.num - this.CurrentBlockNum;
-            if(delta > 0)
+            if(delta < 8)
             {
-                this.TimePoolTransaction.push(Tr)
-                ToLogClient("Added " + TrName(Tr) + " to time pool. Send transaction after " + (delta) + " sec")
+                let SELF = this;
+                setTimeout(function ()
+                {
+                    SELF.AddTransaction(Tr, ToAll)
+                }, (delta - 1) * 1000)
+                if(ToAll)
+                    ToLogClient("#2 Added " + TrName(Tr) + "  for block: " + Tr.num + " to timer. Send transaction after " + (delta - 1) + " sec")
                 return 4;
             }
+            return  - 3;
         }
-        this.SendTransaction(Tr)
-        Res = this.AddTrToQuote(this.TreePoolTr, Tr, MAX_TRANSACTION_COUNT)
-        ToLogContext("#1 Add " + TrName(Tr) + " for Block: " + this.CurrentBlockNum + " Res=" + Res)
+        var Block = this.GetBlockContext(Tr.num);
+        if(!Block)
+            return 0;
+        Res = this.AddTrToBlockQuote(Block, Tr)
+        if(Tr.ToAll)
+            this.SendTransaction(Tr)
+        ToLogContext("#1 Add " + TrName(Tr) + " for Block: " + Tr.num + " Res=" + Res)
         return Res;
-    }
-    CheckTimePoolTransaction()
-    {
-        for(var i = this.TimePoolTransaction.length - 1; i >= 0; i--)
-        {
-            var Tr = this.TimePoolTransaction[i];
-            if(Tr.num <= this.CurrentBlockNum + 1)
-            {
-                this.SendTransaction(Tr)
-                this.TimePoolTransaction.splice(i, 1)
-                var Res = this.AddTrToQuote(this.TreePoolTr, Tr, MAX_TRANSACTION_COUNT);
-                ToLogContext("#2 Add " + TrName(Tr) + " for Block: " + this.CurrentBlockNum + " Res=" + Res)
-            }
-        }
     }
     SendTransaction(Tr)
     {
@@ -224,7 +215,7 @@ module.exports = class CMessages extends require("./transaction-validator")
                 }
             }
             Node.TaskLastSend = CurTime
-            this.SendF(Node, {"Method":"TRANSACTION", "Data":Tr})
+            this.SendF(Node, {"Method":"TRANSACTION", "Data":Tr}, Tr.body.length + 1000)
             ToLogContext("Send " + TrName(Tr) + " to " + NodeName(Node))
             Count--
             if(Count <= 0)
@@ -239,33 +230,8 @@ module.exports = class CMessages extends require("./transaction-validator")
     TRANSACTION(Info, CurTime)
     {
         var Tr = this.DataFromF(Info);
-        var Res = this.IsValidTransaction(Tr, this.CurrentBlockNum);
-        if(Res ===  - 3)
-        {
-            var delta = Tr.num - this.CurrentBlockNum;
-            if(delta > 0)
-            {
-                if(delta < 3 && this.TimePoolTransaction.length < 50)
-                {
-                    this.TimePoolTransaction.push(Tr)
-                    ToLogContext("Receive " + TrName(Tr) + " from " + NodeName(Info.Node) + " added to time pool. Send transaction after " + (delta) + " sec")
-                }
-                else
-                {
-                    ToLogContext("Receive " + TrName(Tr) + " from " + NodeName(Info.Node) + " NOT ADD TO POOL")
-                }
-                return ;
-            }
-        }
-        if(Res > 0)
-        {
-            var Res = this.AddTrToQuote(this.TreePoolTr, Tr, MAX_TRANSACTION_COUNT);
-            ToLogContext("Receive " + TrName(Tr) + " from " + NodeName(Info.Node) + " added to current pool for Block: " + this.CurrentBlockNum + "  Res=" + Res)
-        }
-        else
-        {
-            ToLogContext("Receive " + TrName(Tr) + " from " + NodeName(Info.Node) + " NOT ADD TO POOL")
-        }
+        ToLogContext("Receive " + TrName(Tr) + " from " + NodeName(Info.Node))
+        this.AddTransaction(Tr, 0)
     }
 };
 
@@ -278,6 +244,6 @@ function TrName(Tr)
     if(!Tr.HASH)
         SERVER.CheckCreateTransactionHASH(Tr);
     var Str = GetHexFromArr(Tr.HASH);
-    return Str.substr(0, 8);
+    return "Tx:" + Str.substr(0, 8);
 };
 global.TrName = TrName;

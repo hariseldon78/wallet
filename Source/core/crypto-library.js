@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -9,10 +9,6 @@
  * Telegram: https://web.telegram.org/#/im?p=@terafoundation
 */
 
-if(global.ELECTRON)
-    global.secp256k1 = require('secp256k1/js');
-else
-    global.secp256k1 = require('secp256k1');
 require("./library.js");
 const crypto = require('crypto');
 global.MAX_SUPER_VALUE_POW = (1 << 30) * 2;
@@ -401,7 +397,72 @@ function CalcHashFromArray(ArrHashes,bOriginalSeq)
     return Hash;
 };
 
-function CalcMerklFromArray(Arr,Tree0)
+function CalcHash3FromArray(ArrHashes,bOriginalSeq)
+{
+    if(bOriginalSeq === undefined)
+        ArrHashes.sort(CompareArr);
+    var Buf = [];
+    for(var i = 0; i < ArrHashes.length; i++)
+    {
+        var Value = ArrHashes[i];
+        for(var n = 0; n < Value.length; n++)
+            Buf.push(Value[n]);
+    }
+    if(Buf.length === 0)
+        return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    else
+        if(Buf.length === 32)
+            return Buf;
+    var Hash = sha3(Buf);
+    return Hash;
+};
+
+function CalcMerkl3FromArray(Arr,Tree0)
+{
+    var Tree, bSort;
+    if(Tree0)
+    {
+        bSort = 0;
+        Tree = Tree0;
+    }
+    else
+    {
+        bSort = 1;
+        Tree = {Levels:[], Full:true};
+    }
+    Tree.Levels.push(Arr);
+    if(Arr.length < 2)
+    {
+        if(Arr.length === 0)
+            Tree.Root = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        else
+        {
+            if(Arr[0].length === 32)
+                Tree.Root = Arr[0];
+            else
+                Tree.Root = sha3(Arr[0]);
+        }
+        return Tree;
+    }
+    if(bSort)
+    {
+        Arr.sort(CompareArr);
+    }
+    var Arr2 = [];
+    var len = Math.floor(Arr.length / 2);
+    for(var i = 0; i < len; i++)
+    {
+        var Hash = sha3arr2(Arr[i * 2], Arr[i * 2 + 1]);
+        Arr2.push(Hash);
+    }
+    if(len * 2 !== Arr.length)
+    {
+        Arr2.push(Arr[Arr.length - 1]);
+    }
+    return CalcMerkl3FromArray(Arr2, Tree);
+};
+
+function CalcMerkl0FromArray(Arr,Tree0)
 {
     var Tree, bSort;
     if(Tree0)
@@ -443,20 +504,36 @@ function CalcMerklFromArray(Arr,Tree0)
     {
         Arr2.push(Arr[Arr.length - 1]);
     }
-    return CalcMerklFromArray(Arr2, Tree);
+    return CalcMerkl0FromArray(Arr2, Tree);
 };
 
-function CalcTreeHashFromArrBody(arrContent)
+function CalcMerklFromArray(BlockNum,Arr)
+{
+    if(BlockNum >= global.BLOCKNUM_TICKET_ALGO)
+    {
+        return CalcMerkl3FromArray(Arr);
+    }
+    else
+    {
+        return CalcMerkl0FromArray(Arr);
+    }
+};
+
+function CalcTreeHashFromArrBody(BlockNum,arrContent)
 {
     if(arrContent)
     {
         var arrHASH = [];
         for(var i = 0; i < arrContent.length; i++)
         {
-            var HASH = shaarr(arrContent[i]);
+            var HASH;
+            if(BlockNum >= global.BLOCKNUM_TICKET_ALGO)
+                HASH = sha3(arrContent[i]);
+            else
+                HASH = shaarr(arrContent[i]);
             arrHASH.push(HASH);
         }
-        var Tree = CalcMerklFromArray(arrHASH);
+        var Tree = CalcMerklFromArray(BlockNum, arrHASH);
         return Tree.Root;
     }
     else
@@ -902,7 +979,7 @@ function Encrypt(Arr,Arr2,ArrSecret)
     var arrRnd = Buffer.alloc(StartLen);
     GlobalCryptID++;
     arrRnd.writeUInt32LE(GlobalCryptID, 1, 4);
-    var Time = Math.floor(((new Date) - DeltaTimeCryptID) / 1000);
+    var Time = Math.floor((Date.now() - DeltaTimeCryptID) / 1000);
     arrRnd.writeUInt32LE(Time, 5, 4);
     Arr2[0] = Arr[0];
     for(var i = 1; i < StartLen; i++)
@@ -1039,30 +1116,7 @@ function GetArrFromStr(Str,Len)
     }
     return arr.slice(0, Len);
 };
-
-function CreateHashBody(body,Num,Nonce)
-{
-    body.writeUIntLE(Num, body.length - 12, 6);
-    body.writeUIntLE(Nonce, body.length - 6, 6);
-    return shaarr(body);
-};
-
-function CreateHashBodyPOWInnerMinPower(arr,BlockNum,MinPow)
-{
-    var nonce = 0;
-    while(1)
-    {
-        var arrhash = CreateHashBody(arr, BlockNum, nonce);
-        var power = GetPowPower(arrhash);
-        if(power >= MinPow)
-        {
-            return nonce;
-        }
-        nonce++;
-    }
-};
-global.CreateHashBody = CreateHashBody;
-global.CreateHashBodyPOWInnerMinPower = CreateHashBodyPOWInnerMinPower;
+global.CalcHash3FromArray = CalcHash3FromArray;
 global.CalcHashFromArray = CalcHashFromArray;
 global.CalcMerklFromArray = CalcMerklFromArray;
 global.CalcTreeHashFromArrBody = CalcTreeHashFromArrBody;
@@ -1094,24 +1148,20 @@ for(var i = 0; i < DEVELOP_PUB_KEY_ARR.length; i++)
     DEVELOP_PUB_KEY_ARR[i] = Buffer.from(GetArrFromHex(DEVELOP_PUB_KEY_ARR[i]));
 global.DEVELOP_PUB_KEY = DEVELOP_PUB_KEY_ARR[0];
 global.DEVELOP_PUB_KEY0 = Buffer.from(GetArrFromHex("022e80aa78bc07c72781fac12488096f0bfa7b4f48fbab0f2a92e208d1ee3654df"));
+if(LOCAL_RUN)
+{
+    global.DEVELOP_PUB_KEY0 = Buffer.from(GetArrFromHex("026A04AB98D9E4774AD806E302DDDEB63BEA16B5CB5F223EE77478E861BB583EB3"));
+    global.DEVELOP_PUB_KEY = global.DEVELOP_PUB_KEY0;
+}
 global.ARR_PUB_KEY = ["027ae0dce92d8be1f893525b226695ddf0fe6ad756349a76777ff51f3b59067d70", "02769165a6f9950d023a415ee668b80bb96b5c9ae2035d97bdfb44f356175a44ff",
 "021566c6feb5495594fc4bbea27795e1db5a663b3fe81ea9846268d5c394e24c23", "0215accbc993e67216c9b7f3912b29b91671864e861e61ab73589913c946839efa",
 "0270e0c5acb8eefe7faddac45503da4885e02fb554975d12907f6c33ac6c6bdba5", "0202f2aad628f46d433faf70ba6bf12ab9ed96a46923b592a72508dc43af36cb80",
 "0254f373fc44ac4a3e80ec8cb8cc3693a856caa82e0493067bdead78ce8ec354b8", "027617f9511b0b0cdbda8f3e17907732731296321846f3fd6fd19460f7227d9482",
 ];
-if(LOCAL_RUN)
+if(global.TEST_NETWORK || LOCAL_RUN)
 {
-    var KeyPair = GetKeyPairTest("DEVELOPER");
-    global.DEVELOP_PUB_KEY = KeyPair.PubKeyArr;
-    ToLog("DEVELOP_KEY: " + KeyPair.getPrivateKey('hex'));
     for(var i = 0; i < 100; i++)
-        global.ARR_PUB_KEY[i] = GetHexFromArr(global.DEVELOP_PUB_KEY);
+        global.ARR_PUB_KEY[i] = GetHexFromArr(DEVELOP_PUB_KEY0);
+    global.DEVELOP_PUB_KEY_ARR = [DEVELOP_PUB_KEY0];
+    global.DEVELOP_PUB_KEY = DEVELOP_PUB_KEY_ARR[0];
 }
-else
-    if(global.TEST_NETWORK)
-    {
-        for(var i = 0; i < 100; i++)
-            global.ARR_PUB_KEY[i] = GetHexFromArr(DEVELOP_PUB_KEY0);
-        global.DEVELOP_PUB_KEY_ARR = [DEVELOP_PUB_KEY0];
-        global.DEVELOP_PUB_KEY = DEVELOP_PUB_KEY_ARR[0];
-    }

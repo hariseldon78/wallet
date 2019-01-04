@@ -7,6 +7,7 @@
     <script type="text/javascript" src="../HTML/JS/client.js"></script>
 
     <script>
+        var WasMapDisplay=0;
         var PointC;
         var glMouse,glMoveMouse;
         var NodesMap={};
@@ -102,7 +103,15 @@
 
             SetStatus("Nodes count: "+Count);
 
+            if(!WasMapDisplay)
+                $("idMapAll").style="display:block";
+            WasMapDisplay=1;
         }
+        function $(id)
+        {
+            return document.getElementById(id);
+        }
+
         function SetStatus(Str)
         {
             var id = $("idStatus");
@@ -239,8 +248,11 @@
 <body>
 <DIV align='center'>
 <DIV id="idStatus"></DIV>
+    <DIV id="idMapAll" style="display: none">
 <DIV class="basemap">
 <canvas class="map" width="1244" height="658" id='idMap'></canvas>
+</DIV>
+
 </DIV>
 </DIV>
 </body>

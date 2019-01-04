@@ -1,4 +1,5 @@
 
+
 global.HTTP_PORT_NUMBER=Math.trunc(10000*Math.random())+50000;
 if(!global.DATA_PATH || global.DATA_PATH==="")
     global.DATA_PATH="../DATA";
@@ -24,15 +25,14 @@ require('./process/main-process');
 
 setTimeout(function ()
 {
-    var Path;
+    var Path="";
     if(global.HTTP_SERVER_START_OK)
     {
-        Path='http://localhost:'+HTTP_PORT_NUMBER;
+        Path='http://localhost:'+global.HTTP_PORT_NUMBER;
     }
     else
     {
         ToLog("ERR HTTP-SERVER NOT STARTING");
-        Path="";
     }
     nw.Window.open(Path+'/HTML/wallet.html',
         {
@@ -64,10 +64,10 @@ setTimeout(function ()
             tray.menu = menu;
 
 
-            win.on('navigation',function (frame, url, policy)
-            {
-                console.log("url:"+url);
-            });
+            // win.on('navigation',function (frame, url, policy)
+            // {
+            //     console.log("url:"+url);
+            // });
         });
 },500);
 

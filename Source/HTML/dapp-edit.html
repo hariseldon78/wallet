@@ -618,6 +618,8 @@
     function FillSmart()
     {
         var StartNum=$("idSmartStart").value;
+        if(!StartNum)
+            StartNum=8;
         GetData("DappSmartList",{StartNum:StartNum,CountNum:50}, function (SetData)
         {
             if(SetData && SetData.result)

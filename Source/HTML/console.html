@@ -190,8 +190,9 @@
 
     function SendServerCode(Value)
     {
+        var bProcessTX = $("idProcessTX").checked;
         SetStatus("");
-        GetData("SendDirectCode",Value, function (Data)
+        GetData("SendDirectCode",{Code:Value,TX:bProcessTX }, function (Data)
         {
             if(Data)
             {
@@ -221,18 +222,18 @@
         var DeltaBlockNum = parseInt($("idConsoleDeltaBlockNum").value);
 
 
-        if($("idSendAll").checked)
-        {
-            var Data={DeltaBlockNum:DeltaBlockNum,Code:Code,All:1};
-            GetData("SendECode",Data, function (Data)
-            {
-                if(Data)
-                {
-                    ToResult(Data.text);
-                }
-            });
-            return;
-        }
+//        if($("idSendAll").checked)
+//        {
+//            var Data={DeltaBlockNum:DeltaBlockNum,Code:Code,All:1};
+//            GetData("SendECode",Data, function (Data)
+//            {
+//                if(Data)
+//                {
+//                    ToResult(Data.text);
+//                }
+//            });
+//            return;
+//        }
 
 
         var Addr = $("idNode").value;
@@ -280,6 +281,7 @@
     var idSendServer=undefined;
     function StartSendServerPeriod(Period)
     {
+        var Period=1000*ParseNum($("idPeriodRun").value);
         if(idSendServer)
             clearInterval(idSendServer);
         idSendServer=0;
@@ -402,7 +404,11 @@
             CodeList=JSON.parse(localStorage["ConsoleCodeList2"]);
         if(localStorage["idConsolePow"])
             $("idPow").value=localStorage["idConsolePow"];
-        $("idSendAll").checked=(localStorage["idConsoleSendAll"]==="true");
+        //$("idSendAll").checked=(localStorage["idConsoleSendAll"]==="true");
+
+        $("idProcessTX").checked=(localStorage["idConsoleProcessTX"]==="true");
+        if(localStorage["idConsolePeriodRun"])
+            $("idPeriodRun").value=localStorage["idConsolePeriodRun"];
     }
     function SaveValues()
     {
@@ -413,10 +419,12 @@
         localStorage["idConsoleNode"]=$("idNode").value;
         localStorage["ConsoleCodeList2"]=JSON.stringify(CodeList);
         localStorage["idConsolePow"]=$("idPow").value;
-        localStorage["idConsoleSendAll"]=$("idSendAll").checked;
+        //localStorage["idConsoleSendAll"]=$("idSendAll").checked;
 
-
+        localStorage["idConsoleProcessTX"]=$("idProcessTX").checked;
+        localStorage["idConsolePeriodRun"]=$("idPeriodRun").value;
     }
+
 
 
 
@@ -471,8 +479,11 @@
             </textarea>
 
             <INPUT type="button" onclick="SendToServer()" class="bt btdoit" id="idBtRun" value="Send">
-            All<input type="checkbox" id="idSendAll" onchange = "SaveValues()"/>
-            <INPUT type="button" onclick="StartSendServerPeriod(1000)" class="bt btdoit" id="idBtRun2" value="Run every 1 sec">
+            <!--All<input type="checkbox" id="idSendAll" onchange = "SaveValues()"/>-->
+            <INPUT type="button" onclick="StartSendServerPeriod()" class="bt btdoit" id="idBtRun2" value="Run every">
+            <INPUT type="number" id="idPeriodRun" style="width: 50px;" onchange="SaveValues();" value="1">sec
+            TX process:<INPUT type="checkbox" id="idProcessTX">
+
 
             <BR>
 

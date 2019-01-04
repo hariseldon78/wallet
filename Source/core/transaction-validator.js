@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -18,7 +18,6 @@ require("../dapp/messager");
 require("../dapp/names");
 if(global.PROCESS_NAME === "MAIN" || global.PROCESS_NAME === "TX")
     require("./wallet");
-const RBTree = require('bintrees').RBTree;
 module.exports = class CSmartContract extends require("./block-exchange")
 {
     constructor(SetKeyPair, RunIP, RunPort, UseRNDHeader, bVirtual)
@@ -149,6 +148,15 @@ module.exports = class CSmartContract extends require("./block-exchange")
     OnDelete(Block)
     {
     }
+    IsValidTicket(Tr, BlockNum)
+    {
+        this.CheckCreateByTicket(Tr, BlockNum)
+        if(Tr.power < MIN_POWER_POW_TR)
+            return  - 2;
+        if(Tr.num !== BlockNum)
+            return  - 3;
+        return 1;
+    }
     IsValidTransaction(Tr, BlockNum)
     {
         if(!Tr.body || Tr.body.length < MIN_TRANSACTION_SIZE || Tr.body.length > MAX_TRANSACTION_SIZE)
@@ -156,9 +164,7 @@ module.exports = class CSmartContract extends require("./block-exchange")
         this.CheckCreateTransactionHASH(Tr)
         if(Tr.power - Math.log2(Tr.body.length / 128) < MIN_POWER_POW_TR)
             return  - 2;
-        if(Tr.num > BlockNum)
-            return  - 3;
-        if(Tr.num < BlockNum - 10)
+        if(Tr.num !== BlockNum)
             return  - 3;
         if(Tr.body[0] === TYPE_TRANSACTION_ACC_HASH)
             return  - 4;

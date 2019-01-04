@@ -192,3 +192,9 @@
 {
     width: 136px;
 }
+
+
+input[type="checkbox"]
+{
+    vertical-align: middle;
+}

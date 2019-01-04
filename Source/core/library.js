@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -12,6 +12,49 @@
 var fs = require('fs');
 const os = require('os');
 require("./constant.js");
+Number.prototype.toStringZ = function (count)
+{
+    var strnum = this.toString();
+    if(strnum.length > count)
+        count = strnum.length;
+    else
+        strnum = "0000000000" + strnum;
+    return strnum.substring(strnum.length - count, strnum.length);
+};
+String.prototype.right = function (count)
+{
+    if(this.length > count)
+        return this.substr(this.length - count, count);
+    else
+        return this.substr(0, this.length);
+};
+if(fs.existsSync("./lib/bintrees"))
+    global.RBTree = require("../lib/bintrees").RBTree;
+else
+    global.RBTree = require('bintrees').RBTree;
+if(fs.existsSync("./lib/ntp-client"))
+    global.ntpClient = require('../lib/ntp-client');
+else
+    global.ntpClient = require('ntp-client');
+global.Stun = require('stun');
+global.ZIP = require("zip");
+var strOS = os.platform() + "_" + os.arch();
+if(global.NWMODE)
+    strOS = strOS + "-nw";
+if(fs.existsSync("./lib/secp256k1/" + strOS + "/secp256k1.node"))
+{
+    try
+    {
+        global.secp256k1 = require('../lib/secp256k1/' + strOS + '/secp256k1.node');
+    }
+    catch(e)
+    {
+    }
+}
+if(!global.secp256k1)
+{
+    global.secp256k1 = require('secp256k1');
+}
 require('../HTML/JS/terahashlib.js');
 require("./crypto-library");
 if(global.USE_PARAM_JS)
@@ -31,22 +74,6 @@ require("./log.js");
 global.BufLib = require("../core/buffer");
 require('../HTML/JS/sha3.js');
 require('../HTML/JS/coinlib.js');
-Number.prototype.toStringZ = function (count)
-{
-    var strnum = this.toString();
-    if(strnum.length > count)
-        count = strnum.length;
-    else
-        strnum = "0000000000" + strnum;
-    return strnum.substring(strnum.length - count, strnum.length);
-};
-String.prototype.right = function (count)
-{
-    if(this.length > count)
-        return this.substr(this.length - count, count);
-    else
-        return this.substr(0, this.length);
-};
 global.DelDir = function (Path)
 {
     if(Path.substr(Path.length - 1, 1) === "/")
@@ -235,14 +262,14 @@ global.CompareItemHash33 = function (a,b)
 };
 global.CompareItemHashPow = function (a,b)
 {
-    return CompareArr(a.hashPow, b.hashPow);
+    return CompareArr(a.HashPow, b.HashPow);
 };
 global.CompareItemTimePow = function (a,b)
 {
     if(b.TimePow !== a.TimePow)
         return b.TimePow - a.TimePow;
     else
-        return CompareArr(a.hashPow, b.hashPow);
+        return CompareArr(a.HashPow, b.HashPow);
 };
 global.LOAD_CONST = function ()
 {
@@ -289,11 +316,9 @@ global.SAVE_CONST = function (bForce)
         WasStartSaveConst = true;
     }
 };
-var ntpClient = require('ntp-client');
 
 function CheckGlobalTime()
 {
-    ToLog("CheckGlobalTime");
     ntpClient.getNetworkTime("pool.ntp.org", 123, function (err,NetTime)
     {
         if(err)
@@ -322,6 +347,8 @@ global.GetDeltaCurrentTime = function ()
 };
 global.GetStrTimeUTC = function (now)
 {
+    if(!global.GetCurrentTime)
+        return ":::";
     if(!now)
         now = GetCurrentTime();
     var Str = "" + now.getUTCDate();
@@ -334,6 +361,8 @@ global.GetStrTimeUTC = function (now)
 };
 global.GetStrOnlyTimeUTC = function (now)
 {
+    if(!global.GetCurrentTime)
+        return ":::";
     if(!now)
         now = GetCurrentTime();
     var Str;

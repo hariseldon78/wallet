@@ -252,7 +252,7 @@
         {
             var arr = new Uint8Array(32);
             window.crypto.getRandomValues(arr);
-            var Str=GetHexFromArr(arr);
+            var Str=GetHexFromArr(sha3(arr));
             $("idPrivKeyEdit").value=Str;
             SetPubKey(1);
         }
@@ -279,6 +279,12 @@
         {
             if(FlagOK)
             {
+                if(!$("idPrivKey").value)
+                {
+                    OnPrivKeyNew();
+                    OnPrivKeyOK();
+                }
+
                 var Name=document.getElementById("idAccountName").value;
                 var Smart=0;
                 var Currency=0;

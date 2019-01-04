@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -12,7 +12,6 @@
 "use strict";
 const fs = require("fs");
 const crypto = require('crypto');
-const RBTree = require('bintrees').RBTree;
 const STAT_BLOCK_LOAD_PERIOD = CONSENSUS_PERIOD_TIME / 5;
 global.PERIOD_GET_BLOCK = 300;
 if(global.LOCAL_RUN || global.TEST_NETWORK)
@@ -304,9 +303,7 @@ module.exports = class CBlock extends require("./db/block-db")
                         ToLog("Very long length of blocks to load history, stop chain with id=" + chain.id + "  (" + chain.BlockNum + "-" + chain.BlockNumMax + ")")
                         chain.StopSend = true
                         chain.AddInfo("Stop load #1")
-                        this.BlockNumDB = chain.BlockNum
-                        this.TruncateBlockDB(chain.BlockNum)
-                        this.StartLoadHistory()
+                        this.FREE_ALL_MEM_CHAINS()
                         return ;
                     }
                     else
@@ -785,7 +782,7 @@ module.exports = class CBlock extends require("./db/block-db")
         if(chain.CurNumArrLoad >= chain.arr.length)
         {
             var Block = chain.arr[chain.arr.length - 1];
-            if(chain.WriteToDBAfterLoad || Block.BlockNum >= this.CurrentBlockNum + TIME_START_SAVE - 1)
+            if(chain.WriteToDBAfterLoad || Block.BlockNum >= this.CurrentBlockNum + TIME_START_SAVE - 2)
             {
                 var bAllLoaded = true;
                 if(!chain.WriteToDBAfterLoad)
@@ -824,12 +821,6 @@ module.exports = class CBlock extends require("./db/block-db")
     {
         if(!arr.length)
             return ;
-        var PrevHash = this.GetPrevHashDB(arr[0]);
-        if(CompareArr(PrevHash, arr[0].PrevHash) !== 0)
-        {
-            this.FREE_ALL_MEM_CHAINS()
-            return ;
-        }
         var startTime = process.hrtime();
         if(this.LoadHistoryMessage)
             ToLog("WRITE DATA Count:" + arr.length + "  " + arr[0].BlockNum + "-" + arr[arr.length - 1].BlockNum)
@@ -843,6 +834,14 @@ module.exports = class CBlock extends require("./db/block-db")
             if(!FirstBlock)
                 FirstBlock = Block
             Block.BlockDown = undefined
+            var PrevHash = this.GetPrevHashDB(Block);
+            if(CompareArr(PrevHash, Block.PrevHash) !== 0)
+            {
+                if(global.WATCHDOG_DEV)
+                    ToError("******** ERROR LOADED DATA Count:" + arr.length + "  AT BLOCK NUM:" + Block.BlockNum + "  (" + arr[0].BlockNum + "-" + arr[arr.length - 1].BlockNum + ")")
+                this.FREE_ALL_MEM_CHAINS()
+                return ;
+            }
             var Res = 0;
             if(Block.TreeEq)
             {
@@ -1019,7 +1018,7 @@ module.exports = class CBlock extends require("./db/block-db")
     RecalcLoadBlockStatictic()
     {
         return ;
-        var TimeNum = Math.floor(((new Date) - 0) / STAT_BLOCK_LOAD_PERIOD);
+        var TimeNum = Math.floor(Date.now() / STAT_BLOCK_LOAD_PERIOD);
         if(this.LoadBlockStatNum === TimeNum)
             return ;
         this.LoadBlockStatNum = TimeNum
@@ -1087,7 +1086,7 @@ module.exports = class CBlock extends require("./db/block-db")
                 AddInfoBlock(Block, "LOAD TR OK")
             }
             var arrContent = Data.arrContent;
-            var TreeHash = CalcTreeHashFromArrBody(arrContent);
+            var TreeHash = CalcTreeHashFromArrBody(Block.BlockNum, arrContent);
             if(CompareArr(Block.TreeHash, TreeHash) !== 0)
             {
                 ToLog("2. BAD CMP TreeHash block=" + Block.BlockNum + " from:" + NodeName(Info.Node) + "  TreeHash=" + GetHexFromArr(TreeHash) + "  BlockTreeHash=" + GetHexFromArr(Block.TreeHash))
@@ -1202,13 +1201,29 @@ module.exports = class CBlock extends require("./db/block-db")
     {
         if(Block.BlockNum < BLOCK_PROCESSING_LENGTH2)
             return true;
+        var TreeHashTest = CalcTreeHashFromArrBody(Block.BlockNum, Block.arrContent);
+        if(CompareArr(TreeHashTest, Block.TreeHash) !== 0)
+        {
+            var StrHex = GetHexFromArr(TreeHashTest);
+            var StrHex0 = GetHexFromArr(Block.TreeHash);
+            var Str = StrError + " #3 ERROR TREEHASH: " + Block.BlockNum + "  Hex:" + StrHex0.substr(0, 12) + " != " + StrHex.substr(0,
+            12);
+            if(global.WATCHDOG_DEV)
+                ToErrorTrace(Str)
+            else
+                ToError(Str)
+            return false;
+        }
         var PrevHash = this.GetPrevHashDB(Block);
         var testSeqHash = this.GetSeqHash(Block.BlockNum, PrevHash, Block.TreeHash);
         var TestValue = GetHashFromSeqAddr(testSeqHash, Block.AddrHash, Block.BlockNum, PrevHash);
         if(CompareArr(TestValue.Hash, Block.Hash) !== 0)
         {
             var Str = StrError + " #2 ERROR HASH - block num: " + Block.BlockNum;
-            ToError(Str)
+            if(global.WATCHDOG_DEV)
+                ToErrorTrace(Str)
+            else
+                ToError(Str)
             return false;
         }
         return true;

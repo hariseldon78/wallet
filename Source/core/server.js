@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -12,9 +12,7 @@
 "use strict";
 const net = require("net");
 const dgram = require("dgram");
-const stun = require('stun');
 const crypto = require('crypto');
-const RBTree = require('bintrees').RBTree;
 require("./library.js");
 require("./crypto-library");
 const HARD_PACKET_PERIOD = 20;
@@ -105,7 +103,8 @@ module.exports = class CTransport extends require("./connect")
         MethodTiming:
         {
             Map["TRANSFER"] = {Period:700, Hot:1}
-            Map["RETTRANSFER"] = {Period:0, Hot:1}
+            Map["GETTRANSFERTX"] = {Period:700, Hot:1}
+            Map["RETTRANSFERTX"] = {Period:0, Hot:1}
             Map["TIME"] = {Period:2000, LowVersion:1, Hard:1, Immediately:1}
             Map["PING"] = {Period:4000, LowVersion:1, Hard:1, Immediately:1}
             Map["PONG"] = {Period:0, LowVersion:1, Immediately:1}
@@ -118,6 +117,7 @@ module.exports = class CTransport extends require("./connect")
             Map["GETBLOCKHEADER"] = {Period:PERIOD_GET_BLOCK, Hard:2, Process:global.STATIC_PROCESS}
             Map["GETBLOCK"] = {Period:PERIOD_GET_BLOCK, Hard:2, Process:global.STATIC_PROCESS}
             Map["GETNODES"] = {Period:1000, Hard:1, LowVersion:1, IsAddrList:1}
+            Map["RETGETNODES"] = {Period:0, IsAddrList:1}
             Map["RETGETNODES2"] = {Period:0, IsAddrList:1}
             Map["GETCODE"] = {Period:10000, Hard:1, LowVersion:1, Process:global.STATIC_PROCESS}
             Map["RETBLOCKHEADER"] = {Period:0}
@@ -173,7 +173,7 @@ module.exports = class CTransport extends require("./connect")
     }
     ADD_CURRENT_STAT_TIME(Key, Value)
     {
-        var TimeNum = Math.floor(((new Date) - 0) / STAT_PERIOD);
+        var TimeNum = Math.floor(Date.now() / STAT_PERIOD);
         if(this.CurrentTimeStart !== TimeNum)
             this.CurrentTimeValues = {}
         this.CurrentTimeStart = TimeNum
@@ -183,7 +183,7 @@ module.exports = class CTransport extends require("./connect")
     }
     GET_CURRENT_STAT_TIME(Key)
     {
-        var TimeNum = Math.floor(((new Date) - 0) / STAT_PERIOD);
+        var TimeNum = Math.floor(Date.now() / STAT_PERIOD);
         if(this.CurrentTimeStart === TimeNum)
         {
             var Value = this.CurrentTimeValues[Key];
@@ -199,7 +199,7 @@ module.exports = class CTransport extends require("./connect")
     }
     RecalcSendStatictic()
     {
-        var TimeNum = Math.floor(((new Date) - 0) / STAT_PERIOD);
+        var TimeNum = Math.floor(Date.now() / STAT_PERIOD);
         if(this.SendStatNum === TimeNum)
             return ;
         this.SendStatNum = TimeNum
@@ -510,6 +510,10 @@ module.exports = class CTransport extends require("./connect")
         var startTime = process.hrtime();
         ADD_TO_STAT("GETDATA(KB)", buf.length / 1024)
         ADD_TO_STAT("GETDATA(KB):" + NodeName(Node), buf.length / 1024, 1)
+        if(!Node.TransferSize)
+            Node.TransferSize = 0
+        Node.TransferSize += buf.length / 1024
+        Node.TransferBlockNumFix = this.CurrentBlockNum
         var Buf = this.GetDataFromBuf(buf);
         if(!Buf)
         {
@@ -529,6 +533,8 @@ module.exports = class CTransport extends require("./connect")
         {
             Buf.Context = global.ContextPackets.LoadValue(Buf.ContextID)
         }
+        if(Buf.Method === "RETTRANSFER")
+            var stop = 1;
         if(!Buf.Context)
         {
             if(Param && Param.Period === 0 && Buf.Method !== "RETBLOCKHEADER")
@@ -554,7 +560,7 @@ module.exports = class CTransport extends require("./connect")
                 {
                     Buf.PacketNum = this.LoadedPacketNum
                     Buf.BlockProcessCount = Node.BlockProcessCount
-                    Buf.TimeLoad = (new Date) - 0
+                    Buf.TimeLoad = Date.now()
                     this.HardPacketForSend.insert(Buf)
                 }
             }
@@ -620,12 +626,12 @@ module.exports = class CTransport extends require("./connect")
     {
         ADD_TO_STAT("MAX:BUSY_LEVEL", this.BusyLevel)
         ADD_TO_STAT("MAX:HARD_PACKET_SIZE", this.HardPacketForSend.size)
-        var Delta = (new Date) - this.LastTimeHard;
-        this.LastTimeHard = (new Date) - 0
+        var Delta = Date.now() - this.LastTimeHard;
+        this.LastTimeHard = Date.now()
         if(Delta > global.HARD_PACKET_PERIOD120 * HARD_PACKET_PERIOD / 100)
         {
             ADD_TO_STAT("HARD_PACKET_PERIOD120")
-            var Delta2 = (new Date) - this.LastTimeHardOK;
+            var Delta2 = Date.now() - this.LastTimeHardOK;
             if(Delta2 > 100)
             {
                 var Info = this.HardPacketForSend.min();
@@ -635,7 +641,7 @@ module.exports = class CTransport extends require("./connect")
         }
         if(this.BusyLevel)
             this.BusyLevel = this.BusyLevel / 1.1
-        this.LastTimeHardOK = (new Date) - 0
+        this.LastTimeHardOK = Date.now()
         ADD_TO_STAT("HARD_PACKET_PERIOD")
         this.DoHardPacketForSendNext()
     }
@@ -672,7 +678,7 @@ module.exports = class CTransport extends require("./connect")
         this.OnPacketTCP(Info)
         ADD_TO_STAT("DO_HARD_PACKET")
         ADD_TO_STAT("DO_HARD_PACKET:" + Info.Method)
-        var DeltaTime = (new Date) - Info.TimeLoad;
+        var DeltaTime = Date.now() - Info.TimeLoad;
         if(this.HardPacketForSend.size && DeltaTime > PACKET_ALIVE_PERIOD / 2)
         {
             ADD_TO_STAT("DELETE_HARD_PACKET_OLD", this.HardPacketForSend.size)
@@ -682,7 +688,7 @@ module.exports = class CTransport extends require("./connect")
         var MaxCount = 20;
         while(Info = this.HardPacketForSend.max())
         {
-            var DeltaTime = (new Date) - Info.TimeLoad;
+            var DeltaTime = Date.now() - Info.TimeLoad;
             if(DeltaTime > PACKET_ALIVE_PERIOD / 2 || !Info.Node.Socket || Info.Node.Socket.WasClose)
             {
                 this.HardPacketForSend.remove(Info)
@@ -730,7 +736,7 @@ module.exports = class CTransport extends require("./connect")
         Info.TypeData = TypeData
         Info.Prioritet = Node.Prioritet
         Info.PacketNum = Node.SendPacketNum
-        Info.TimeNum = (new Date) - 0
+        Info.TimeNum = Date.now()
         Node.SendPacket.insert(Info)
     }
     DoSendPacketNodeAll(Node)
@@ -739,7 +745,7 @@ module.exports = class CTransport extends require("./connect")
     }
     DoSendPacketNode(Node)
     {
-        var TimeNum = (new Date) - 0;
+        var TimeNum = Date.now();
         var Info = Node.SendPacket.max();
         if(Info && TimeNum - Info.TimeNum > PACKET_ALIVE_PERIOD)
             while(Info = Node.SendPacket.max())
@@ -1086,15 +1092,15 @@ module.exports = class CTransport extends require("./connect")
     FindInternetIP()
     {
         let SELF = this;
-        let server = stun.createServer(this.Net4);
-        const request = stun.createMessage(stun.constants.STUN_BINDING_REQUEST);
+        let server = Stun.createServer(this.Net4);
+        const request = Stun.createMessage(Stun.constants.STUN_BINDING_REQUEST);
         server.on('error', function (err)
         {
             SELF.CanSend++
         })
         server.once('bindingResponse', function (stunMsg)
         {
-            var value = stunMsg.getAttribute(stun.constants.STUN_ATTR_XOR_MAPPED_ADDRESS).value;
+            var value = stunMsg.getAttribute(Stun.constants.STUN_ATTR_XOR_MAPPED_ADDRESS).value;
             ToLog("INTERNET IP:" + value.address)
             SELF.CanSend++
             global.INTERNET_IP_FROM_STUN = value.address
@@ -1143,12 +1149,12 @@ module.exports = class CTransport extends require("./connect")
             return ;
         if(!Count)
             Count = 1
-        var Delta = (new Date) - Node.LastTimeError;
+        var Delta = Date.now() - Node.LastTimeError;
         if(Delta > 10 * 1000)
         {
             Node.ErrCount = 0
         }
-        Node.LastTimeError = (new Date) - 0
+        Node.LastTimeError = Date.now()
         Node.ErrCountAll += Count
         Node.ErrCount += Count
         if(Node.ErrCount >= 5)

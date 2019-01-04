@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -256,8 +256,11 @@ class SmartApp extends require("./dapp")
             return "Error account FromNum: " + TR.FromNum;
         if(TR.OperationID < AccountFrom.Value.OperationID)
             return "Error OperationID (expected: " + AccountFrom.Value.OperationID + " for ID: " + TR.FromNum + ")";
-        if(TR.OperationID > AccountFrom.Value.OperationID + 100)
-            return "Error too much OperationID (expected max: " + (AccountFrom.Value.OperationID + 100) + " for ID: " + TR.FromNum + ")";
+        var MaxCountOperationID = 100;
+        if(BlockNum >= global.BLOCKNUM_TICKET_ALGO)
+            MaxCountOperationID = 1000000
+        if(TR.OperationID > AccountFrom.Value.OperationID + MaxCountOperationID)
+            return "Error too much OperationID (expected max: " + (AccountFrom.Value.OperationID + MaxCountOperationID) + " for ID: " + TR.FromNum + ")";
         var hash = shabuf(Body.slice(0, Body.length - 64 - 12));
         var Result = 0;
         if(AccountFrom.PubKey[0] === 2 || AccountFrom.PubKey[0] === 3)

@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -9,8 +9,8 @@
  * Telegram: https://web.telegram.org/#/im?p=@terafoundation
 */
 
-global.UPDATE_CODE_VERSION_NUM = 821;
-global.MIN_CODE_VERSION_NUM = 820;
+global.UPDATE_CODE_VERSION_NUM = 841;
+global.MIN_CODE_VERSION_NUM = 836;
 global.InitParamsArg = InitParamsArg;
 global.CONST_NAME_ARR = ["AUTO_COORECT_TIME", "DELTA_CURRENT_TIME", "COMMON_KEY", "NODES_NAME", "SERVER_PRIVATE_KEY_HEX", "USE_NET_FOR_SERVER_ADDRES",
 "NET_WORK_MODE", "STAT_MODE", "MAX_STAT_PERIOD", "HTTP_PORT_NUMBER", "HTTP_PORT_PASSWORD", "HTTP_IP_CONNECT", "WALLET_NAME",
@@ -18,12 +18,12 @@ global.CONST_NAME_ARR = ["AUTO_COORECT_TIME", "DELTA_CURRENT_TIME", "COMMON_KEY"
 "MINING_PERIOD_TIME", "POW_MAX_PERCENT", "COUNT_MINING_CPU", "SIZE_MINING_MEMORY", "POW_RUN_COUNT", "POW_RUN_COUNT_FIND", "USE_AUTO_UPDATE",
 "RESTART_PERIOD_SEC", "MAX_GRAY_CONNECTIONS_TO_SERVER", "TRANSACTION_PROOF_COUNT", "UPDATE_NUM_COMPLETE", "HARD_PACKET_PERIOD120",
 "LIMIT_SEND_TRAFIC", "MIN_VER_STAT", "STOPGETBLOCK", "WATCHDOG_DEV", "ADDRLIST_MODE", "CheckPointDelta", "DEBUG_WALLET", "HTTP_HOSTING_PORT",
-"WATCHDOG_BADACCOUNT", ];
-global.USE_NEW_SEND_ALGO = 1;
+"HTTPS_HOSTING_DOMAIN", "WATCHDOG_BADACCOUNT", ];
+global.TR_TICKET_HASH_LENGTH = 10;
+global.BLOCKNUM_TICKET_ALGO = 16070000;
 global.WATCHDOG_BADACCOUNT = 0;
 global.WATCHDOG_DEV = 0;
 global.DEBUG_WALLET = 0;
-global.MAX_DELTA_BLOCKNUM = 8;
 global.CHECK_GLOBAL_TIME = 1;
 global.AUTO_COORECT_TIME = 1;
 global.DELTA_CURRENT_TIME = 0;
@@ -57,6 +57,7 @@ global.CHECK_STOP_CHILD_PROCESS = 10 * 1000;
 global.COUNT_MINING_CPU = 0;
 global.SIZE_MINING_MEMORY = 0;
 global.HTTP_HOSTING_PORT = 0;
+global.HTTPS_HOSTING_DOMAIN = "";
 require("./startlib.js");
 global.MIN_POWER_POW_HANDSHAKE = 12;
 global.USE_HINT = 0;
@@ -76,11 +77,11 @@ global.TR_LEN = 100;
 global.BLOCK_PROCESSING_LENGTH = 8;
 global.BLOCK_PROCESSING_LENGTH2 = BLOCK_PROCESSING_LENGTH * 2;
 global.CONSENSUS_PERIOD_TIME = 1000;
-global.MAX_BLOCK_SIZE = 120 * 1024;
+global.MAX_BLOCK_SIZE = 130 * 1024;
 global.MAX_TRANSACTION_SIZE = 65535;
 global.MIN_TRANSACTION_SIZE = 32;
 global.MAX_TRANSACTION_COUNT = 2000;
-global.AVG_TRANSACTION_COUNT = 5;
+global.MAX_TRANSACTION_LIMIT = 2000;
 global.MIN_POWER_POW_TR = 10;
 if(global.MIN_POWER_POW_BL === undefined)
     global.MIN_POWER_POW_BL = 5;
@@ -106,28 +107,31 @@ global.PRICE_DAO = function (BlockNum)
 {
     return {NewAccount:10, NewSmart:100, NewTokenSmart:10000};
 };
+if(global.LOCAL_RUN)
+{
+    var Num = Date.now() - 50 * 1000;
+    global.START_NETWORK_DATE = Math.trunc(Num / 1000) * 1000;
+}
 InitParamsArg();
 if(global.LOCAL_RUN)
 {
     global.DELTA_BLOCK_ACCOUNT_HASH = 30;
     global.PERIOD_ACCOUNT_HASH = 10;
     global.START_BLOCK_ACCOUNT_HASH = 1;
+    global.BLOCKNUM_TICKET_ALGO = 1;
     global.SMART_BLOCKNUM_START = 0;
     global.START_MINING = 60;
     global.REF_PERIOD_MINING = 10;
-    var Num = (new Date) - 0 - 50 * 1000;
-    global.START_NETWORK_DATE = Math.trunc(Num / 1000) * 1000;
     global.TEST_TRANSACTION_GENERATE = 0;
-    global.MIN_POWER_POW_TR = 0;
-    global.MIN_POWER_POW_ACC_CREATE = 0;
-    console.log("LOCAL RUN - START_NETWORK_DATE: " + START_NETWORK_DATE);
+    global.MIN_POWER_POW_TR = 8;
+    global.MIN_POWER_POW_ACC_CREATE = 8;
     NETWORK = "LOCAL";
     global.ALL_VIEW_ROWS = 1;
 }
 else
     if(global.TEST_NETWORK)
     {
-        var Num = (new Date) - 0 - 50 * 1000;
+        var Num = Date.now() - 50 * 1000;
         console.log("CURRENT NUM: " + (Math.trunc(Num / 1000) * 1000));
         global.SMART_BLOCKNUM_START = 0;
         global.START_NETWORK_DATE = 1544879533000 + 170000 * 1000;
@@ -135,11 +139,11 @@ else
         global.REF_PERIOD_MINING = 1000;
         global.MIN_POWER_POW_TR = 8;
         global.MIN_POWER_POW_ACC_CREATE = 8;
-        global.AVG_TRANSACTION_COUNT = 10;
         global.TRANSACTION_PROOF_COUNT = 200 * 1000;
         global.MAX_SIZE_LOG = 20 * 1024 * 1024;
         global.DELTA_BLOCK_ACCOUNT_HASH = 1000;
         global.START_BLOCK_ACCOUNT_HASH = 1000;
+        global.BLOCKNUM_TICKET_ALGO = 1296300;
         global.WALLET_NAME = "TEST";
         NETWORK = "TERA-TEST";
         if(global.START_PORT_NUMBER === undefined)
@@ -147,7 +151,13 @@ else
         global.ALL_VIEW_ROWS = 1;
     }
 global.MIN_POWER_POW_TR = 0;
-global.AVG_TRANSACTION_COUNT = 2000;
+if(global.LOCAL_RUN)
+{
+    global.BLOCKNUM_TICKET_ALGO = 0;
+    global.MIN_POWER_POW_TR = 0;
+    global.AUTO_COORECT_TIME = 0;
+    global.CHECK_GLOBAL_TIME = 0;
+}
 global.GetNetworkName = function ()
 {
     return NETWORK + "-" + DEF_MAJOR_VERSION;
@@ -217,37 +227,46 @@ function InitParamsArg()
                                 global.HTTP_HOSTING_PORT = parseInt(str.substr(8));
                             }
                             else
-                            {
-                                switch(str)
+                                if(str.substr(0, 13) == "STARTNETWORK:")
                                 {
-                                    case "CHILDPOW":
-                                        global.CHILD_POW = true;
-                                        break;
-                                    case "ADDRLIST":
-                                        global.ADDRLIST_MODE = true;
-                                        break;
-                                    case "CREATEONSTART":
-                                        global.CREATE_ON_START = true;
-                                        break;
-                                    case "LOCALRUN":
-                                        global.LOCAL_RUN = 1;
-                                        break;
-                                    case "TESTRUN":
-                                        global.TEST_NETWORK = 1;
-                                        break;
-                                    case "NOLOCALRUN":
-                                        global.LOCAL_RUN = 0;
-                                        break;
-                                    case "NOAUTOUPDATE":
-                                        global.USE_AUTO_UPDATE = 0;
-                                        break;
-                                    case "NOPARAMJS":
-                                        global.USE_PARAM_JS = 0;
-                                        break;
-                                    case "READONLYDB":
-                                        global.READ_ONLY_DB = 1;
-                                        break;
+                                    global.START_NETWORK_DATE = parseInt(str.substr(13));
+                                    console.log("START_NETWORK_DATE: " + START_NETWORK_DATE);
                                 }
-                            }
+                                else
+                                {
+                                    switch(str)
+                                    {
+                                        case "CHILDPOW":
+                                            global.CHILD_POW = true;
+                                            break;
+                                        case "ADDRLIST":
+                                            global.ADDRLIST_MODE = true;
+                                            break;
+                                        case "CREATEONSTART":
+                                            global.CREATE_ON_START = true;
+                                            break;
+                                        case "LOCALRUN":
+                                            global.LOCAL_RUN = 1;
+                                            break;
+                                        case "TESTRUN":
+                                            global.TEST_NETWORK = 1;
+                                            break;
+                                        case "NOLOCALRUN":
+                                            global.LOCAL_RUN = 0;
+                                            break;
+                                        case "NOAUTOUPDATE":
+                                            global.USE_AUTO_UPDATE = 0;
+                                            break;
+                                        case "NOPARAMJS":
+                                            global.USE_PARAM_JS = 0;
+                                            break;
+                                        case "READONLYDB":
+                                            global.READ_ONLY_DB = 1;
+                                            break;
+                                        case "NWMODE":
+                                            global.NWMODE = 1;
+                                            break;
+                                    }
+                                }
     }
 };

@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -10,7 +10,6 @@
 */
 
 "use strict";
-const RBTree = require('bintrees').RBTree;
 const crypto = require('crypto');
 const CNode = require("./node");
 global.PERIOD_FOR_RECONNECT = 3600 * 1000;
@@ -89,12 +88,12 @@ module.exports = class CConnect extends require("./transfer-msg")
     }
     StartConnectTry(Node)
     {
-        var Delta = (new Date) - Node.StartTimeConnect;
+        var Delta = Date.now() - Node.StartTimeConnect;
         if(Delta >= Node.NextConnectDelta && this.IsCanConnect(Node))
         {
             if(!GetSocketStatus(Node.Socket))
             {
-                Node.StartTimeConnect = (new Date) - 0
+                Node.StartTimeConnect = Date.now()
                 if(Delta < 60 * 1000)
                     Node.NextConnectDelta = Node.NextConnectDelta * 2
                 else
@@ -166,10 +165,10 @@ module.exports = class CConnect extends require("./transfer-msg")
                     Node.NextPing = MIN_PERIOD_PING
                 if(Node.NextPing < MIN_PERIOD_PING)
                     Node.NextPing = MIN_PERIOD_PING
-                var Delta = (new Date) - Node.PingStart;
+                var Delta = Date.now() - Node.PingStart;
                 if(Delta >= Node.NextPing)
                 {
-                    Node.PingStart = (new Date) - 0
+                    Node.PingStart = Date.now()
                     Node.NextPing = Node.NextPing * 1.5
                     if(Node.NextPing > MAX_PERIOD_PING)
                         Node.NextPing = MAX_PERIOD_PING
@@ -379,8 +378,6 @@ module.exports = class CConnect extends require("./transfer-msg")
                 var Block = this.ReadBlockHeaderDB(CHECK_POINT.BlockNum);
                 if(Block && CompareArr(Block.Hash, CHECK_POINT.Hash) !== 0)
                 {
-                    if(global.TEST_NETWORK)
-                        ToLog("reload chains")
                     this.BlockNumDB = CHECK_POINT.BlockNum - 1
                     this.TruncateBlockDB(this.BlockNumDB)
                     this.StartLoadHistory(Node)
@@ -520,10 +517,10 @@ module.exports = class CConnect extends require("./transfer-msg")
     {
         if(glStopNode)
             return ;
-        var Delta = (new Date) - Node.StartTimeGetNodes;
+        var Delta = Date.now() - Node.StartTimeGetNodes;
         if(Delta >= Node.NextGetNodesDelta)
         {
-            Node.StartTimeGetNodes = (new Date) - 0
+            Node.StartTimeGetNodes = Date.now()
             Node.NextGetNodesDelta = Math.min(Node.NextGetNodesDelta * 2, MAX_PERIOD_GETNODES)
             if(global.ADDRLIST_MODE)
                 Node.NextGetNodesDelta = MAX_PERIOD_GETNODES
@@ -532,8 +529,41 @@ module.exports = class CConnect extends require("./transfer-msg")
     }
     GETNODES(Info, CurTime)
     {
-        this.SendF(Info.Node, {"Method":"RETGETNODES2", "Context":Info.Context, "Data":{arr:this.GetDirectNodesArray(false), IsAddrList:global.ADDRLIST_MODE,
+        this.SendF(Info.Node, {"Method":"RETGETNODES", "Context":Info.Context, "Data":{arr:this.GetDirectNodesArray(false, 0, 1), IsAddrList:global.ADDRLIST_MODE,
             }}, MAX_NODES_RETURN * 250 + 300)
+    }
+    static
+    RETGETNODES_F()
+    {
+        return "{arr:[\
+                        {\
+                            addrArr:arr32,\
+                            ip:str20,\
+                            port:uint16,\
+                            portweb:uint16,\
+                            LastTime:uint,\
+                            DeltaTime:uint,\
+                            Reserv:arr8\
+                        }\
+                    ],\
+                    IsAddrList:byte}";
+    }
+    RETGETNODES(Info, CurTime)
+    {
+        var Data = this.DataFromF(Info);
+        var arr = Data.arr;
+        if(arr && arr.length > 0)
+        {
+            for(var i = 0; i < arr.length; i++)
+            {
+                arr[i].addrStr = GetHexFromArr(arr[i].addrArr)
+                var Item = this.AddToArrNodes(arr[i], true);
+                if(Item)
+                    Item.LastTimeGetNode = CurTime - 0
+            }
+        }
+        Info.Node.IsAddrList = Data.IsAddrList
+        AddNodeInfo(Info.Node, "RETGETNODES length=" + arr.length)
     }
     static
     RETGETNODES2_F()
@@ -583,11 +613,13 @@ module.exports = class CConnect extends require("./transfer-msg")
             return false;
         return true;
     }
-    GetDirectNodesArray(bAll, bWebPort)
+    GetDirectNodesArray(bAll, bWebPort, bGetAddrArr)
     {
         var ret = [];
         var Value = {addrStr:this.addrStr, ip:this.ip, port:this.port, LastTime:0, DeltaTime:0, Hot:true, BlockProcessCount:0, portweb:HTTP_HOSTING_PORT,
         };
+        if(bGetAddrArr)
+            Value.addrArr = GetArrFromHex(Value.addrStr)
         ret.push(Value)
         var len = this.NodesArr.length;
         var UseRandom = 0;
@@ -626,6 +658,8 @@ module.exports = class CConnect extends require("./transfer-msg")
                 continue;
             var Value = {addrStr:Item.addrStr, ip:Item.ip, port:Item.port, FirstTime:Item.FirstTime, FirstTimeStr:Item.FirstTimeStr, LastTime:Item.LastTime - 0,
                 DeltaTime:Item.DeltaTime, Hot:Item.Hot, BlockProcessCount:Item.BlockProcessCount, Name:Item.Name, portweb:Item.portweb, };
+            if(bGetAddrArr)
+                Value.addrArr = GetArrFromHex(Value.addrStr)
             ret.push(Value)
         }
         return ret;
@@ -1162,8 +1196,8 @@ module.exports = class CConnect extends require("./transfer-msg")
             if(Node.Socket && Node.Socket.ConnectToServer)
             {
                 if(!Node.SocketStart)
-                    Node.SocketStart = (new Date) - 0
-                var DeltaTime = (new Date) - Node.SocketStart;
+                    Node.SocketStart = Date.now()
+                var DeltaTime = Date.now() - Node.SocketStart;
                 if(DeltaTime >= PERIOD_FOR_RECONNECT)
                 {
                     if(random(100) >= 90)
@@ -1310,7 +1344,7 @@ module.exports = class CConnect extends require("./transfer-msg")
     {
         if(global.NET_WORK_MODE)
             return ;
-        var CurTime = (new Date) - 0;
+        var CurTime = Date.now();
         var CountNodes = this.ActualNodes.size;
         if(CountNodes || this.StopDetectGrayMode)
         {
@@ -1346,7 +1380,7 @@ module.exports = class CConnect extends require("./transfer-msg")
     {
         var ArrTree = this.GetTransferTree();
         this.TransferTree = ArrTree
-        var CurTime = (new Date) - 0;
+        var CurTime = Date.now();
         if(GrayConnect())
         {
             var MustCount = GetGrayServerConnections();

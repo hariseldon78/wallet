@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -26,6 +26,7 @@ setInterval(function ()
 {
     process.send({cmd:"Alive"});
 }, 1000);
+setInterval(PrepareStatEverySecond, 1000);
 process.send({cmd:"online", message:"OK"});
 global.ToLogClient = function (Str,StrKey,bFinal)
 {
@@ -41,6 +42,21 @@ process.on('message', function (msg)
         case "Exit":
             process.exit(0);
             break;
+        case "call":
+            var Err = 0;
+            var Ret;
+            try
+            {
+                Ret = global[msg.Name](msg.Params);
+            }
+            catch(e)
+            {
+                Err = 1;
+                Ret = "" + e;
+            }
+            if(msg.id)
+                process.send({cmd:"retcall", id:msg.id, Err:Err, Params:Ret});
+            break;
         case "FindTX":
             global.TreeFindTX.SaveValue(msg.TX, msg.TX);
             break;
@@ -53,10 +69,18 @@ process.on('message', function (msg)
         case "ReWriteDAppTransactions":
             ReWriteDAppTransactions(msg);
             break;
+        case "Eval":
+            EvalCode(msg.Code);
+            break;
         default:
             break;
     }
 });
+global.SetStatMode = function (Val)
+{
+    global.STAT_MODE = Val;
+    return global.STAT_MODE;
+};
 
 function CheckAlive()
 {
@@ -97,18 +121,26 @@ setInterval(function ()
     DoTXProcess();
 }, 10);
 var BlockTree = new STreeBuffer(30 * 1000, CompareItemHashSimple, "number");
+global.bShowDetail = 0;
 var LastBlockNum = undefined;
 
 function DoTXProcess()
 {
-    InitTXProcess();
+    if(LastBlockNum === undefined)
+        InitTXProcess();
     var BlockMin = FindMinimal();
     if(!BlockMin)
     {
         return ;
     }
+    var StartTime = Date.now();
+    var CountTX = 0;
     for(var Num = BlockMin.BlockNum; Num < BlockMin.BlockNum + 200; Num++)
     {
+        var EndTime = Date.now();
+        var Delta = EndTime - StartTime;
+        if(Delta >= 1000)
+            break;
         var Block = SERVER.ReadBlockDB(Num);
         if(!Block)
         {
@@ -126,6 +158,9 @@ function DoTXProcess()
         SERVER.BlockProcessTX(Block);
         if(Num % 100000 === 0)
             ToLog("CALC: " + Num);
+        CountTX++;
+        if(bShowDetail)
+            ToLog("    CALC: " + Num + " SumHash: " + GetHexFromArr(Block.SumHash).substr(0, 12));
         BlockTree.SaveValue(Block.BlockNum, {BlockNum:Block.BlockNum, SumHash:Block.SumHash});
         LastBlockNum = Block.BlockNum;
     }
@@ -184,36 +219,34 @@ function IsValidSumHash(Block)
 
 function InitTXProcess()
 {
-    if(LastBlockNum === undefined)
+    var StateTX = DApps.Accounts.DBStateTX.Read(0);
+    if(!StateTX)
     {
+        LastBlockNum = 0;
         var MaxNum = DApps.Accounts.DBAccountsHash.GetMaxNum();
-        if(MaxNum < 1)
-            LastBlockNum = 0;
-        var StateTX = DApps.Accounts.DBStateTX.Read(0);
-        if(!StateTX)
+        if(MaxNum > 0)
         {
-            LastBlockNum = 0;
             var Item = DApps.Accounts.DBAccountsHash.Read(MaxNum);
             if(Item)
             {
                 LastBlockNum = Item.BlockNum;
             }
-            ToLog("DETECT NEW VER on BlockNum=" + LastBlockNum);
-            DApps.Accounts.DBStateTX.Write({Num:0, BlockNum:LastBlockNum});
         }
-        StateTX = DApps.Accounts.DBStateTX.Read(0);
-        LastBlockNum = StateTX.BlockNum;
-        LastBlockNum = PERIOD_ACCOUNT_HASH * Math.trunc(LastBlockNum / PERIOD_ACCOUNT_HASH);
-        if(LastBlockNum > 100)
-        {
-            LastBlockNum = 1 + LastBlockNum - 100;
-        }
-        if(LastBlockNum <= 0)
-            RewriteAllTransactions();
-        else
-            ToLog("Start NUM = " + LastBlockNum);
-        DApps.Accounts.CalcMerkleTree();
+        ToLog("DETECT NEW VER on BlockNum=" + LastBlockNum);
+        DApps.Accounts.DBStateTX.Write({Num:0, BlockNum:LastBlockNum});
     }
+    StateTX = DApps.Accounts.DBStateTX.Read(0);
+    LastBlockNum = StateTX.BlockNum;
+    LastBlockNum = PERIOD_ACCOUNT_HASH * Math.trunc(LastBlockNum / PERIOD_ACCOUNT_HASH);
+    if(LastBlockNum > 100)
+    {
+        LastBlockNum = 1 + LastBlockNum - 100;
+    }
+    if(LastBlockNum <= 0)
+        RewriteAllTransactions();
+    else
+        ToLog("Start NUM = " + LastBlockNum);
+    DApps.Accounts.CalcMerkleTree();
 };
 
 function RewriteAllTransactions()
@@ -237,4 +270,18 @@ function ReWriteDAppTransactions(msg)
     if(StartNum < LastBlockNum)
         LastBlockNum = StartNum;
     ToLog("Start num = " + LastBlockNum);
+};
+global.EvalCode = function (Code)
+{
+    var Result;
+    try
+    {
+        var ret = eval(Code);
+        Result = JSON.stringify(ret, "", 4);
+    }
+    catch(e)
+    {
+        Result = "" + e;
+    }
+    return Result;
 };

@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -20,8 +20,8 @@ var StartStatTime, file_name_error = GetDataPath("err.log"), file_name_errorPrev
 
 function ToLogFile(t,e,r)
 {
-    e instanceof Error && (e = e.message + "\n" + e.stack), global.START_SERVER || (e = global.PROCESS_NAME + ": " + e), "MAIN" === global.PROCESS_NAME ? (console.log(START_PORT_NUMBER + ": " + GetStrOnlyTime() + ": " + e),
-    r || SaveToLogFileSync(t, e)) : process.send({cmd:"log", message:e});
+    e instanceof Error && (e = e.message + "\n" + e.stack), global.START_SERVER || (e = global.PROCESS_NAME + ": " + e), "MAIN" !== global.PROCESS_NAME && process.send ? process.send({cmd:"log",
+        message:e}) : (console.log(START_PORT_NUMBER + ": " + GetStrOnlyTime() + ": " + e), r || SaveToLogFileSync(t, e));
 };
 
 function ToLogClient(t,e,r)
@@ -80,10 +80,10 @@ function GetDiagramData(t,e)
 {
     var r, o = 2 * MAX_STAT_PERIOD + 2;
     r = "MAX:" === e.substr(0, 4);
-    for(var n, a = MAX_STAT_PERIOD, l = (GetCurrentStatIndex() - a + o) % o, i = (t.Total, []), T = void 0, S = l; S < l + a; S++)
+    for(var n, a = MAX_STAT_PERIOD, l = (GetCurrentStatIndex() - a + o) % o, i = (t.Total, []), T = void 0, g = l; g < l + a; g++)
     {
-        var g = S % o;
-        if(n = t.Interval[g])
+        var S = g % o;
+        if(n = t.Interval[S])
         {
             var f = n[e];
             void 0 !== f ? r ? i.push(f) : (void 0 !== T ? i.push(f - T) : i.push(f), T = f) : i.push(0);
@@ -96,13 +96,13 @@ function CalcInterval(t,e,r)
 {
     for(var o, n = 2 * MAX_STAT_PERIOD + 2, a = {}, l = (e - r + n) % n, i = t.Total, T = l; T < l + r; T++)
     {
-        var S = T % n;
-        if(o = t.Interval[S])
+        var g = T % n;
+        if(o = t.Interval[g])
             break;
     }
     if(o)
-        for(var g in i)
-            "MAX:" === g.substr(0, 4) ? a[g] = 0 : void 0 === o[g] ? a[g] = i[g] : a[g] = i[g] - o[g];
+        for(var S in i)
+            "MAX:" === S.substr(0, 4) ? a[S] = 0 : void 0 === o[S] ? a[S] = i[S] : a[S] = i[S] - o[S];
     return a;
 };
 
@@ -155,11 +155,7 @@ global.PrepareStatEverySecond = function ()
 {
     CurStatIndex++;
     var t = GetCurrentStatIndex();
-    if(CopyStatInterval(CONTEXT_STATS, t), CopyStatInterval(CONTEXT_ERRORS, t), SERVER.MiningBlock)
-    {
-        var e = SERVER.MiningBlock;
-        SERVER.СтатБлок = {BlockNum:e.BlockNum, SeqHash:e.SeqHash, AddrHash:e.AddrHash};
-    }
+    CopyStatInterval(CONTEXT_STATS, t), CopyStatInterval(CONTEXT_ERRORS, t);
 }, global.TO_ERROR_LOG = function (t,e,r,o,n,a)
 {
     r instanceof Error && (r = r.message + "\n"), "rinfo" === o ? r += " from: " + n.address + ":" + n.port : "node" === o && (r += " from: " + n.ip + ":" + n.port);
@@ -210,9 +206,9 @@ global.PrepareStatEverySecond = function ()
         var i = r[o], T = i.arr;
         l && T.length > l && (T = T.slice(T.length - l)), l && 0 <= ",POWER_MY_WIN,POWER_BLOCKCHAIN,".indexOf("," + i.name + ",") && (T = SERVER.GetStatBlockchain(i.name,
         l));
-        for(var S = 0, g = 0; g < T.length; g++)
-            T[g] && (S += T[g]);
-        0 < T.length && (S /= T.length);
+        for(var g = 0, S = 0; S < T.length; S++)
+            T[S] && (g += T[S]);
+        0 < T.length && (g /= T.length);
         var f = 1;
         if("MAX:" === i.name.substr(0, 4))
             for(; 500 <= T.length; )
@@ -220,7 +216,7 @@ global.PrepareStatEverySecond = function ()
         else
             for(; 500 <= T.length; )
                 T = ResizeArrAvg(T), f *= 2;
-        i.AvgValue = S, i.steptime = f, i.arr = T.slice(1);
+        i.AvgValue = g, i.steptime = f, i.arr = T.slice(1);
     }
     return r;
 }, global.GET_STATS = function (t)
@@ -245,10 +241,16 @@ global.PrepareStatEverySecond = function ()
 {
 }, global.GetStrOnlyTime = function (t)
 {
-    var e = "" + (t = t || GetCurrentTime()).getHours().toStringZ(2);
+    if(!global.GetCurrentTime)
+        return ":::";
+    t || (t = GetCurrentTime());
+    var e = "" + t.getHours().toStringZ(2);
     return e = (e = (e = e + ":" + t.getMinutes().toStringZ(2)) + ":" + t.getSeconds().toStringZ(2)) + "." + t.getMilliseconds().toStringZ(3);
 }, global.GetStrTime = function (t)
 {
-    var e = "" + (t = t || GetCurrentTime()).getDate().toStringZ(2);
+    if(!global.GetCurrentTime)
+        return ":::";
+    t || (t = GetCurrentTime());
+    var e = "" + t.getDate().toStringZ(2);
     return e = (e = (e = (e = (e = (e = e + "." + (1 + t.getMonth()).toStringZ(2)) + "." + t.getFullYear()) + " " + t.getHours().toStringZ(2)) + ":" + t.getMinutes().toStringZ(2)) + ":" + t.getSeconds().toStringZ(2)) + "." + t.getMilliseconds().toStringZ(3);
 };

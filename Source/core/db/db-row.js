@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -41,6 +41,7 @@ module.exports = class CDBState extends require("./db")
     }
     Write(Data, RetBuf)
     {
+        var startTime = process.hrtime();
         this.LastHash = undefined
         this.WasUpdate = 1
         this.CheckNewNum(Data)
@@ -63,6 +64,8 @@ module.exports = class CDBState extends require("./db")
         {
             FI.size = Position + this.DataSize
         }
+        ADD_TO_STAT_TIME("ROWS_WRITE_MS", startTime)
+        ADD_TO_STAT("ROWS_WRITE")
         return true;
     }
     Read(Num, GetBufOnly)
@@ -114,6 +117,7 @@ module.exports = class CDBState extends require("./db")
     }
     Truncate(LastNum)
     {
+        var startTime = process.hrtime();
         LastNum = Math.trunc(LastNum)
         var Position = (LastNum + 1) * this.DataSize;
         if(Position < 0)
@@ -130,6 +134,7 @@ module.exports = class CDBState extends require("./db")
             this.BufMap = {}
             this.BufMapCount = 0
         }
+        ADD_TO_STAT_TIME("ROWS_WRITE_MS", startTime)
     }
     DeleteHistory(BlockNumFrom)
     {

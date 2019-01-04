@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -152,6 +152,8 @@ class AccountApp extends require("./dapp")
     }
     Start(bClean)
     {
+        if(global.LOCAL_RUN)
+            bClean = 1
         if(!bClean && this.DBState.GetMaxNum() + 1 >= BLOCK_PROCESSING_LENGTH2)
             return ;
         this.DBState.MerkleTree = undefined
@@ -245,8 +247,7 @@ class AccountApp extends require("./dapp")
             this.RollBackTransaction()
             ToError("DoCoinBaseTR: " + e)
         }
-        this.CommitBlock(Block.BlockNum)
-        this.CalcHash(Block)
+        this.CommitBlock(Block)
     }
     OnWriteTransaction(Block, Body, BlockNum, TrNum, ContextFrom)
     {
@@ -511,8 +512,17 @@ class AccountApp extends require("./dapp")
             }
         }
         this.CreateTrCount++
-        var HASH = shaarr(Body);
-        var power = GetPowPower(HASH);
+        var power;
+        if(BlockNum >= global.BLOCKNUM_TICKET_ALGO)
+        {
+            var Tr = {body:Body};
+            SERVER.CheckCreateTransactionHASH(Tr)
+            power = Tr.power
+        }
+        else
+        {
+            power = GetPowPower(shaarr(Body))
+        }
         if(CheckMinPower)
         {
             var MinPower;
@@ -579,8 +589,11 @@ class AccountApp extends require("./dapp")
         {
             if(TR.OperationID < Data.Value.OperationID)
                 return "Error OperationID (expected: " + Data.Value.OperationID + " for ID: " + TR.FromID + ")";
-            if(TR.OperationID > Data.Value.OperationID + 100)
-                return "Error too much OperationID (expected max: " + (Data.Value.OperationID + 100) + " for ID: " + TR.FromID + ")";
+            var MaxCountOperationID = 100;
+            if(BlockNum >= global.BLOCKNUM_TICKET_ALGO)
+                MaxCountOperationID = 1000000
+            if(TR.OperationID > Data.Value.OperationID + MaxCountOperationID)
+                return "Error too much OperationID (expected max: " + (Data.Value.OperationID + MaxCountOperationID) + " for ID: " + TR.FromID + ")";
         }
         if(BlockNum >= SMART_BLOCKNUM_START)
         {
@@ -883,8 +896,9 @@ class AccountApp extends require("./dapp")
     GetRowsAccounts(start, count, Filter, bGetState)
     {
         var F;
-        if(Filter)
+        if(Filter && Filter.substring(0, 1) === "=")
         {
+            Filter = Filter.substring(1)
             try
             {
                 F = CreateEval(Filter, "Cur,Currency,ID,Operation,Amount,Adviser,Name,PubKey,Smart,BlockNum")
@@ -930,6 +944,15 @@ class AccountApp extends require("./dapp")
                     WasError = 1
                 }
             }
+            else
+                if(Filter)
+                {
+                    var Amount = FLOAT_FROM_COIN(Data.Value);
+                    var PubKey = GetHexFromArr(Data.PubKey);
+                    var Str = "" + Data.Num + " " + Data.Value.OperationID + " " + Data.Name.toUpperCase() + " " + Data.Adviser + " " + Amount + " " + PubKey + " " + Smart + " " + Data.BlockNumCreate;
+                    if(Str.indexOf(Filter) < 0)
+                        continue;
+                }
             if(bGetState)
             {
                 if(Data.Currency)
@@ -1066,8 +1089,9 @@ class AccountApp extends require("./dapp")
     {
         this.DBChanges.RollBackTransaction = 1
     }
-    CommitBlock(BlockNum)
+    CommitBlock(Block)
     {
+        var BlockNum = Block.BlockNum;
         var DBChanges = this.DBChanges;
         var arr = [];
         for(var key in DBChanges.BlockMap)
@@ -1110,6 +1134,7 @@ class AccountApp extends require("./dapp")
             if(StateTX.BlockNum !== BlockNum - 1)
                 throw "ERROR SEQ STATETX";
         }
+        this.CalcHash(Block)
         this.DBStateTX.Write({Num:0, BlockNum:BlockNum})
     }
     CommitTransaction(BlockNum, TrNum)

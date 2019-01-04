@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -57,14 +57,10 @@ module.exports = class CDB extends require("../code")
         BlockNum = this.CheckBlocksOnStartReverse(BlockNum)
         this.BlockNumDB = this.CheckBlocksOnStartFoward(BlockNum - 2000, 0)
         this.BlockNumDB = this.CheckBlocksOnStartFoward(this.BlockNumDB - 100, 1)
-        var startTime = process.hrtime();
         if(this.BlockNumDB >= BLOCK_PROCESSING_LENGTH2)
         {
             this.TruncateBlockDB(this.BlockNumDB)
         }
-        var Time = process.hrtime(startTime);
-        var deltaTime = (Time[0] * 1000 + Time[1] / 1e6) / 1000;
-        ToLog("********************TIME BUFFER: " + deltaTime + " s")
         ToLog("START_BLOCK_NUM:" + this.BlockNumDB)
         this.CheckOnStartComplete = 1
     }
@@ -126,7 +122,7 @@ module.exports = class CDB extends require("../code")
                 ToLog("CheckBlocksOnStartFoward: " + num)
             if(bCheckBody)
             {
-                var TreeHash = CalcTreeHashFromArrBody(Block.arrContent);
+                var TreeHash = CalcTreeHashFromArrBody(Block.BlockNum, Block.arrContent);
                 if(CompareArr(Block.TreeHash, TreeHash) !== 0)
                 {
                     ToLog("BAD TreeHash block=" + Block.BlockNum)
@@ -455,13 +451,13 @@ module.exports = class CDB extends require("../code")
     }
     ClearDataBase()
     {
+        this.RewriteAllTransactions()
         var FItem1 = BlockDB.OpenDBFile(FILE_NAME_HEADER, 1);
         FItem1.size = 0
         fs.ftruncateSync(FItem1.fd, FItem1.size)
         var FItem2 = BlockDB.OpenDBFile(FILE_NAME_BODY, 1);
         FItem2.size = 0
         fs.ftruncateSync(FItem2.fd, FItem2.size)
-        this.RewriteAllTransactions()
         this.BlockNumDB = 0
         this.ClearBufMap()
         this.ClearStat()
@@ -795,15 +791,32 @@ module.exports = class CDB extends require("../code")
         var SeqHash = CalcHashFromArray(arr, true);
         return SeqHash;
     }
+    CheckCreateByTicket(Tr, BlockNum)
+    {
+        if(!Tr.HashPow && Tr.HashTicket)
+        {
+            Tr.num = BlockNum
+            var FullHashTicket = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+            for(var i = 0; i < global.TR_TICKET_HASH_LENGTH; i++)
+                FullHashTicket[i] = Tr.HashTicket[i]
+            WriteUintToArrOnPos(FullHashTicket, Tr.num, global.TR_TICKET_HASH_LENGTH)
+            Tr.HashPow = sha3(FullHashTicket)
+            Tr.power = GetPowPower(Tr.HashPow)
+            Tr.TimePow = Tr.power
+        }
+    }
     CheckCreateTransactionHASH(Tr)
     {
-        if(!Tr.hashPow)
+        if(!Tr.HashPow)
         {
+            Tr.IsTx = 1
             Tr.num = ReadUintFromArr(Tr.body, Tr.body.length - 12)
-            Tr.hashPow = shaarr(Tr.body)
-            Tr.HASH = Tr.hashPow
-            Tr.power = GetPowPower(Tr.hashPow)
-            Tr.TimePow = Tr.num + Tr.power - Math.log2(Tr.body.length / 128)
+            if(Tr.num >= global.BLOCKNUM_TICKET_ALGO)
+                Tr.HASH = sha3(Tr.body)
+            else
+                Tr.HASH = shaarr(Tr.body)
+            Tr.HashTicket = Tr.HASH.slice(0, global.TR_TICKET_HASH_LENGTH)
+            this.CheckCreateByTicket(Tr, Tr.num)
         }
     }
     BlockChainToBuf(WriteNum, StartNum, EndBlockNum)

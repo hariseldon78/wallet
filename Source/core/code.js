@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -11,7 +11,6 @@
 
 "use strict";
 var fs = require("fs");
-const ZIP = require("zip");
 const FORMAT_EVAL_SEND = "{MaxBlockNum:uint,Code:str,Sign:arr64}";
 module.exports = class CCode extends require("./base")
 {

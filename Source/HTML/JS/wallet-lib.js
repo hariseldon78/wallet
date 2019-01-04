@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -52,7 +52,7 @@ function (e)
         if(e && 1 === e.result && e.arr.length)
         {
             var t = e.arr[0];
-            t.UpdateData = new Date - 0, MapAccounts[t.Num] = t, SetNameAccTo();
+            t.UpdateData = Date.now(), MapAccounts[t.Num] = t, SetNameAccTo();
         }
     }), SetNameAccTo();
 };

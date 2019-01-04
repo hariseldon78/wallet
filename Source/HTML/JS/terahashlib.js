@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -18,17 +18,18 @@ function GetHashFromSeqAddr(r,o,a,e)
         var t = shaarrblock2(r, o, a);
         return {Hash:t, PowHash:t, Hash1:t, Hash2:t};
     }
-    var n = ReadUintFromArr(o, 0), i = ReadUintFromArr(o, 6), A = ReadUintFromArr(o, 12), s = ReadUintFromArr(o, 18), l = ReadUint16FromArr(o,
+    var n = ReadUintFromArr(o, 0), i = ReadUintFromArr(o, 6), s = ReadUintFromArr(o, 12), A = ReadUintFromArr(o, 18), l = ReadUint16FromArr(o,
     24), u = ReadUint16FromArr(o, 26);
-    return GetHash(r, ReadUint32FromArr(e || o, 28), a, n, i, A, s, l, u);
+    return GetHash(r, ReadUint32FromArr(e || o, 28), a, n, i, s, A, l, u);
 };
 
-function GetHash(r,o,a,e,t,n,i,A,s)
+function GetHash(r,o,a,e,t,n,i,s,A)
 {
-    DELTA_LONG_MINING < A && (A = 0), DELTA_LONG_MINING < s && (s = 0);
-    var l = GetHashFromNum2(a, o), u = GetHashFromArrNum2(r, e, t), h = GetHashFromNum3(a - A, e, n), f = GetHashFromNum3(a - s,
+    DELTA_LONG_MINING < s && (s = 0), DELTA_LONG_MINING < A && (A = 0);
+    var l = GetHashFromNum2(a, o), u = GetHashFromArrNum2(r, e, t), h = GetHashFromNum3(a - s, e, n), f = GetHashFromNum3(a - A,
     e, i), m = XORArr(l, h), H = XORArr(u, f), c = {Hash:H, Hash1:m, Hash2:H};
-    return 0 < CompareArr(m, H) ? c.PowHash = m : c.PowHash = H, BLOCKNUM_HASH_NEW <= a && (c.Hash = shaarr2(m, H)), c;
+    return 0 < CompareArr(m, H) ? c.PowHash = m : c.PowHash = H, BLOCKNUM_HASH_NEW <= a && (a >= global.BLOCKNUM_TICKET_ALGO ? c.Hash = sha3arr2(m,
+    H) : c.Hash = shaarr2(m, H)), c;
 };
 
 function CalcHashBlockFromSeqAddr(r,o)
@@ -223,9 +224,9 @@ function GetBlockArrFromBuffer(r)
         {
             16 === n && (u.SumHash = ReadArrFromArr(r, 32), u.SumPow = ReadUintFromArr(r)), u.TreeHash = ReadArrFromArr(r, 32), u.AddrHash = ReadArrFromArr(r,
             32);
-            for(var i = [], A = n - 16, s = 0; s < 8; s++)
+            for(var i = [], s = n - 16, A = 0; A < 8; A++)
             {
-                var l = t[A + s];
+                var l = t[s + A];
                 i.push(l.Hash);
             }
             u.PrevHash = CalcHashFromArray(i, !0), u.SeqHash = GetSeqHash(u.BlockNum, u.PrevHash, u.TreeHash), CalcHashBlockFromSeqAddr(u,
@@ -257,4 +258,4 @@ global.WriteUintToArr = WriteUintToArr, global.WriteUint32ToArr = WriteUint32ToA
 global.WriteUint16ToArrOnPos = WriteUint16ToArrOnPos, global.WriteUintToArrOnPos = WriteUintToArrOnPos, global.WriteArrToArr = WriteArrToArr,
 global.WriteArrToArrOnPos = WriteArrToArrOnPos, global.WriteArrToArrHOnPos = WriteArrToArrHOnPos, global.ConvertBufferToStr = ConvertBufferToStr,
 global.CopyObjValue = CopyObjValue, global.CopyArr = CopyArr, global.ParseNum = ParseNum, global.CompareArr = CompareArr, global.shaarr2 = shaarr2,
-global.arr2 = arr2, global.GetBlockArrFromBuffer = GetBlockArrFromBuffer, global.shaarrblock2 = shaarrblock2);
+global.sha3arr2 = sha3arr2, global.arr2 = arr2, global.GetBlockArrFromBuffer = GetBlockArrFromBuffer, global.shaarrblock2 = shaarrblock2);

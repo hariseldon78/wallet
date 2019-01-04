@@ -1,7 +1,7 @@
 /*
  * @project: TERA
  * @version: Development (beta)
- * @copyright: Yuriy Ivanov 2017-2018 [progr76@gmail.com]
+ * @copyright: Yuriy Ivanov 2017-2019 [progr76@gmail.com]
  * @license: MIT (not for evil)
  * Web: http://terafoundation.org
  * GitHub: https://github.com/terafoundation/wallet
@@ -36,6 +36,21 @@ process.on('message', function (msg)
             break;
         case "Exit":
             process.exit(0);
+            break;
+        case "call":
+            var Err = 0;
+            var Ret;
+            try
+            {
+                Ret = global[msg.Name](msg.Params);
+            }
+            catch(e)
+            {
+                Err = 1;
+                Ret = "" + e;
+            }
+            if(msg.id)
+                process.send({cmd:"retcall", id:msg.id, Err:Err, Params:Ret});
             break;
         case "GETBLOCKHEADER":
             GETBLOCKHEADER(msg);
@@ -155,13 +170,10 @@ function GETBLOCK(msg)
     {
         var BufWrite = BufLib.GetBufferFromObject(BlockDB, Formats.BLOCK_TRANSFER, MAX_PACKET_LENGTH, Formats.WRK_BLOCK_TRANSFER);
         StrSend = "OK";
-    }
-    if(StrSend === "OK")
-    {
-        var TreeHash = CalcTreeHashFromArrBody(BlockDB.arrContent);
-        if(CompareArr(BlockDB.TreeHash, TreeHash) !== 0)
+        var TreeHashTest = CalcTreeHashFromArrBody(BlockDB.BlockNum, BlockDB.arrContent);
+        if(CompareArr(BlockDB.TreeHash, TreeHashTest) !== 0)
         {
-            ToLog("1. BAD CMP TreeHash block=" + BlockNum + " TO: " + msg.addrStr.substr(0, 8) + "  TreeHash=" + GetHexFromArr(TreeHash) + "  BlockTreeHash=" + GetHexFromArr(BlockDB.TreeHash));
+            ToLog("1. BAD CMP TreeHash block=" + BlockNum + " TO: " + msg.addrStr.substr(0, 8) + "  TreeHashTest=" + GetHexFromArr(TreeHashTest) + "  DB TreeHash=" + GetHexFromArr(BlockDB.TreeHash));
             StrSend = "NO";
         }
     }
