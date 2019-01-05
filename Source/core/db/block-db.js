@@ -576,7 +576,7 @@ module.exports = class CDB extends require("../code")
                 if(num >= Block.arrContent.length)
                     break;
                 var Tr = {body:Block.arrContent[num]};
-                this.CheckCreateTransactionHASH(Tr)
+                this.CheckCreateTransactionObject(Tr)
                 Tr.Num = num
                 Tr.Type = Tr.body[0]
                 Tr.Length = Tr.body.length
@@ -791,7 +791,7 @@ module.exports = class CDB extends require("../code")
         var SeqHash = CalcHashFromArray(arr, true);
         return SeqHash;
     }
-    CheckCreateByTicket(Tr, BlockNum)
+    CheckCreateTicketObject(Tr, BlockNum)
     {
         if(!Tr.HashPow && Tr.HashTicket)
         {
@@ -805,7 +805,7 @@ module.exports = class CDB extends require("../code")
             Tr.TimePow = Tr.power
         }
     }
-    CheckCreateTransactionHASH(Tr)
+    CheckCreateTransactionObject(Tr)
     {
         if(!Tr.HashPow)
         {
@@ -816,7 +816,7 @@ module.exports = class CDB extends require("../code")
             else
                 Tr.HASH = shaarr(Tr.body)
             Tr.HashTicket = Tr.HASH.slice(0, global.TR_TICKET_HASH_LENGTH)
-            this.CheckCreateByTicket(Tr, Tr.num)
+            this.CheckCreateTicketObject(Tr, Tr.num)
         }
     }
     BlockChainToBuf(WriteNum, StartNum, EndBlockNum)

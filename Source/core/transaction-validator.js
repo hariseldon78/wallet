@@ -66,6 +66,11 @@ module.exports = class CSmartContract extends require("./block-exchange")
             NUM1 = 15
             NUM2 = 100
         }
+        if(Block.BlockNum > global.BLOCKNUM_TICKET_ALGO)
+        {
+            NUM1 = 1000000000000
+            NUM2 = 1000000000000
+        }
         if(Block.BlockNum > NUM1)
         {
             COUNT_MEM_BLOCKS = 1
@@ -150,7 +155,7 @@ module.exports = class CSmartContract extends require("./block-exchange")
     }
     IsValidTicket(Tr, BlockNum)
     {
-        this.CheckCreateByTicket(Tr, BlockNum)
+        this.CheckCreateTicketObject(Tr, BlockNum)
         if(Tr.power < MIN_POWER_POW_TR)
             return  - 2;
         if(Tr.num !== BlockNum)
@@ -161,7 +166,7 @@ module.exports = class CSmartContract extends require("./block-exchange")
     {
         if(!Tr.body || Tr.body.length < MIN_TRANSACTION_SIZE || Tr.body.length > MAX_TRANSACTION_SIZE)
             return  - 1;
-        this.CheckCreateTransactionHASH(Tr)
+        this.CheckCreateTransactionObject(Tr)
         if(Tr.power - Math.log2(Tr.body.length / 128) < MIN_POWER_POW_TR)
             return  - 2;
         if(Tr.num !== BlockNum)
@@ -203,7 +208,7 @@ module.exports = class CSmartContract extends require("./block-exchange")
             WriteUintToArr(Body, BlockNumHash)
             WriteArrToArr(Body, Hash, 32)
             var Tr = {body:Body};
-            this.CheckCreateTransactionHASH(Tr)
+            this.CheckCreateTransactionObject(Tr)
             Arr.unshift(Tr)
         }
         else

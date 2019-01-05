@@ -84,6 +84,8 @@ global.SetStatMode = function (Val)
 
 function CheckAlive()
 {
+    if(global.NOALIVE)
+        return ;
     var Delta = Date.now() - LastAlive;
     if(Delta > 100 * 1000)
     {

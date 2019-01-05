@@ -18,8 +18,9 @@ if(global.LOCAL_RUN || global.TEST_NETWORK)
 {
     global.COUNT_BLOCKS_FOR_LOAD = global.DELTA_BLOCK_ACCOUNT_HASH / 2;
 }
-global.COUNT_HISTORY_BLOCKS_FOR_LOAD = 100;
-global.COUNT_BLOCKS_FOR_CHECK_POW = 100;
+global.COUNT_HISTORY_BLOCKS_FOR_LOAD = 600;
+global.COUNT_BLOCKS_FOR_CHECK_POW = 50;
+global.MAX_DELTA_COUNT_SUM_FOR_LOAD = 10;
 global.MAX_COUNT_CHAIN_LOAD = 120;
 global.PACKET_ALIVE_PERIOD = 4 * CONSENSUS_PERIOD_TIME;
 global.PACKET_ALIVE_PERIOD_NEXT_NODE = PACKET_ALIVE_PERIOD / 2;
@@ -312,7 +313,7 @@ module.exports = class CBlock extends require("./db/block-db")
                             ToLog("Timeout - stop load chain with id=" + chain.id + "  (" + chain.BlockNum + "-" + chain.BlockNumMax + ")")
                             chain.StopSend = true
                             chain.AddInfo("Stop load #2")
-                            this.ClearChains(chain, true)
+                            this.ClearChains(chain, 0)
                         }
                 }
             }
@@ -339,9 +340,9 @@ module.exports = class CBlock extends require("./db/block-db")
         ADD_TO_STAT("MAX:LOADEDCHAINLIST", this.LoadedChainList.length)
         this.FREE_MEM_CHAINS(min_num_load)
         this.LastLoadedBlockNum = 0
-        if(this.LoadedChainList.length > COUNT_HISTORY_BLOCKS_FOR_LOAD / 3)
+        if(this.LoadedChainList.length > COUNT_HISTORY_BLOCKS_FOR_LOAD)
         {
-            ToLog("LoadedChainList>COUNT_HISTORY_BLOCKS_FOR_LOAD/3 - FREE_ALL_MEM_CHAINS")
+            ToLog("LoadedChainList>COUNT_HISTORY_BLOCKS_FOR_LOAD -> FREE_ALL_MEM_CHAINS")
             this.FREE_ALL_MEM_CHAINS()
         }
     }
@@ -640,7 +641,7 @@ module.exports = class CBlock extends require("./db/block-db")
                 }
                 if(chain.LoadCountDB >= COUNT_BLOCKS_FOR_CHECK_POW)
                 {
-                    if(chain.LoadSumDB - chain.LoadSum > COUNT_BLOCKS_FOR_CHECK_POW)
+                    if(chain.LoadSumDB - chain.LoadSum > MAX_DELTA_COUNT_SUM_FOR_LOAD)
                     {
                         var Str = "ERR LOADED SUM POW chains: SumDB > Sum loaded from: " + NodeInfo(Info.Node);
                         chain.StopSend = true

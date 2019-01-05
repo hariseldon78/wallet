@@ -103,7 +103,8 @@ module.exports = class CTransport extends require("./connect")
         MethodTiming:
         {
             Map["TRANSFER"] = {Period:700, Hot:1}
-            Map["GETTRANSFERTX"] = {Period:700, Hot:1}
+            Map["TRANSFERTX"] = {Period:700, Hot:1}
+            Map["GETTRANSFERTX"] = {Period:350, Hot:1}
             Map["RETTRANSFERTX"] = {Period:0, Hot:1}
             Map["TIME"] = {Period:2000, LowVersion:1, Hard:1, Immediately:1}
             Map["PING"] = {Period:4000, LowVersion:1, Hard:1, Immediately:1}

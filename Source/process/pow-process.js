@@ -18,8 +18,11 @@ var idInterval = void 0, Block = {};
 
 function CheckAlive()
 {
-    var e = Date.now() - LastAlive;
-    Math.abs(e) > CHECK_STOP_CHILD_PROCESS && PROCESS.exit(0);
+    if(!global.NOALIVE)
+    {
+        var e = Date.now() - LastAlive;
+        Math.abs(e) > CHECK_STOP_CHILD_PROCESS && PROCESS.exit(0);
+    }
 };
 
 function CalcPOWHash()

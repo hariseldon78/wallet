@@ -31,6 +31,8 @@ ContenTypeMap["svg"] = "image/svg+xml";
 ContenTypeMap[""] = "application/octet-stream";
 ContenTypeMap["zip"] = "application/zip";
 ContenTypeMap["pdf"] = "application/pdf";
+ContenTypeMap["exe"] = "application/octet-stream";
+ContenTypeMap["msi"] = "application/octet-stream";
 ContenTypeMap[".js"] = "application/javascript";
 ContenTypeMap["tml"] = "text/html";
 global.HTTPCaller = {};
@@ -67,7 +69,7 @@ function DoCommand(response,Type,Path,params,remoteAddress)
     switch(method)
     {
         case "":
-            SendFileHTML(response, "./HTML/wallet.html");
+            SendWebFile(response, "./HTML/wallet.html");
             break;
         case "dapp":
             DappTemplateFile(response, params[1]);
@@ -110,11 +112,17 @@ function DoCommand(response,Type,Path,params,remoteAddress)
                     case "ico":
                         path = "./HTML/PIC/" + path;
                         break;
+                    case "pdf":
+                    case "zip":
+                    case "exe":
+                    case "msi":
+                        path = "./HTML/FILES/" + path;
+                        break;
                     default:
                         path = "./HTML/" + path;
                         break;
                 }
-                SendFileHTML(response, path, Path);
+                SendWebFile(response, path, Path);
                 break;
             }
     }
@@ -1188,40 +1196,44 @@ function AddMapList(arrLoadedBlocks,type,MapMapLoaded,MainChains)
 };
 var MapFileHTML5 = {};
 
-function SendFileHTML(response,name,StrCookie)
+function SendWebFile(response,name,StrCookie)
 {
     let type = name.substr(name.length - 3, 3);
-    fs.readFile("./" + name, function read(err,data)
+    var Path = "./" + name;
+    if(!fs.existsSync(Path))
     {
-        if(err)
+        if(type === "ico")
         {
-            if(type === "ico")
-            {
-                response.writeHead(404, {'Content-Type':'text/html'});
-                response.end();
-                return ;
-            }
-            data = "Not found: " + name;
+            response.writeHead(404, {'Content-Type':'text/html'});
+            response.end();
+            return ;
         }
-        else
-        {
-            var StrContentType = ContenTypeMap[type];
-            if(!StrContentType || StrContentType === "text/html")
-            {
-                var Headers = {'Content-Type':'text/html', "X-Frame-Options":"sameorigin"};
-                if(StrCookie)
-                    Headers['Set-Cookie'] = StrCookie;
-                response.writeHead(200, Headers);
-            }
-            else
-            {
-                response.writeHead(200, {'Content-Type':StrContentType});
-            }
-        }
+        var data = "Not found: " + name;
         response.end(data);
-    });
+        return ;
+    }
+    var StrContentType = ContenTypeMap[type];
+    if(!StrContentType || StrContentType === "text/html")
+    {
+        var Headers = {'Content-Type':'text/html', "X-Frame-Options":"sameorigin"};
+        if(StrCookie)
+            Headers['Set-Cookie'] = StrCookie;
+        response.writeHead(200, Headers);
+    }
+    else
+    {
+        response.writeHead(200, {'Content-Type':StrContentType});
+    }
+    const stream = fs.createReadStream(Path);
+    setTimeout(function ()
+    {
+        stream.close();
+        stream.push(null);
+        stream.read(0);
+    }, 100000);
+    stream.pipe(response);
 };
-global.SendFileHTML = SendFileHTML;
+global.SendWebFile = SendWebFile;
 
 function GetStrTime(now)
 {
@@ -1271,6 +1283,41 @@ function parseCookies(rc)
     });
     return list;
 };
+global.SetSafeResponce = SetSafeResponce;
+
+function SetSafeResponce(response)
+{
+    if(!response.Safe)
+    {
+        response.Safe = 1;
+        response._end = response.end;
+        response._writeHead = response.writeHead;
+        response.end = function ()
+        {
+            try
+            {
+                response._end.apply(response, arguments);
+            }
+            catch(e)
+            {
+                ToError("H##1");
+                ToError(e);
+            }
+        };
+        response.writeHead = function ()
+        {
+            try
+            {
+                response._writeHead.apply(response, arguments);
+            }
+            catch(e)
+            {
+                ToError("H##2");
+                ToError(e);
+            }
+        };
+    }
+};
 if(global.HTTP_PORT_NUMBER)
 {
     var ClientTokenMap = {};
@@ -1280,7 +1327,7 @@ if(global.HTTP_PORT_NUMBER)
         ClientTokenMap = {};
     }, 24 * 3600 * 1000);
     var port = global.HTTP_PORT_NUMBER;
-    var HTTPServer = http.createServer(function (request,response0)
+    var HTTPServer = http.createServer(function (request,response)
     {
         if(!request.headers)
             return ;
@@ -1293,30 +1340,7 @@ if(global.HTTP_PORT_NUMBER)
             return ;
         if(global.HTTP_IP_CONNECT && remoteAddress.indexOf("127.0.0.1") < 0 && global.HTTP_IP_CONNECT.indexOf(remoteAddress) < 0)
             return ;
-        let RESPONSE = response0;
-        var response = {end:function (data)
-            {
-                try
-                {
-                    RESPONSE.end(data);
-                }
-                catch(e)
-                {
-                    ToError("H##1");
-                    ToError(e);
-                }
-            }, writeHead:function (num,data)
-            {
-                try
-                {
-                    RESPONSE.writeHead(num, data);
-                }
-                catch(e)
-                {
-                    ToError("H##2");
-                    ToError(e);
-                }
-            }, };
+        SetSafeResponce(response);
         if(!global.SERVER)
         {
             response.writeHead(404, {'Content-Type':'text/html'});
@@ -1343,7 +1367,7 @@ if(global.HTTP_PORT_NUMBER)
             {
                 if(cookies_hash.substr(0, 4) !== "0000")
                 {
-                    SendFileHTML(response, "./HTML/password.html", "token" + StrPort + "=" + cookies_token + ";path=/");
+                    SendWebFile(response, "./HTML/password.html", "token" + StrPort + "=" + cookies_token + ";path=/");
                     return ;
                 }
                 var nonce = 0;
@@ -1361,7 +1385,7 @@ if(global.HTTP_PORT_NUMBER)
                 }
                 else
                 {
-                    SendFileHTML(response, "./HTML/password.html", "token" + StrPort + "=" + cookies_token + ";path=/");
+                    SendWebFile(response, "./HTML/password.html", "token" + StrPort + "=" + cookies_token + ";path=/");
                     return ;
                 }
             }
@@ -1369,7 +1393,7 @@ if(global.HTTP_PORT_NUMBER)
             {
                 var StrToken = GetHexFromArr(crypto.randomBytes(16));
                 ClientTokenMap[StrToken] = 0;
-                SendFileHTML(response, "./HTML/password.html", "token" + StrPort + "=" + StrToken + ";path=/");
+                SendWebFile(response, "./HTML/password.html", "token" + StrPort + "=" + StrToken + ";path=/");
                 return ;
             }
         }

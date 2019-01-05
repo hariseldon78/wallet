@@ -166,7 +166,7 @@ module.exports = class CMessages extends require("./transaction-validator")
         var delta = Tr.num - this.CurrentBlockNum;
         if(delta > 3)
         {
-            if(delta < 8)
+            if(delta < 15)
             {
                 let SELF = this;
                 setTimeout(function ()
@@ -182,9 +182,16 @@ module.exports = class CMessages extends require("./transaction-validator")
         var Block = this.GetBlockContext(Tr.num);
         if(!Block)
             return 0;
-        Res = this.AddTrToBlockQuote(Block, Tr)
-        if(Tr.ToAll)
-            this.SendTransaction(Tr)
+        if(Block.Active)
+        {
+            Res =  - 3
+        }
+        else
+        {
+            Res = this.AddTrToBlockQuote(Block, Tr)
+            if(Tr.ToAll)
+                this.SendTransaction(Tr)
+        }
         ToLogContext("#1 Add " + TrName(Tr) + " for Block: " + Tr.num + " Res=" + Res)
         return Res;
     }
@@ -242,7 +249,7 @@ function ToLogContext(Str)
 function TrName(Tr)
 {
     if(!Tr.HASH)
-        SERVER.CheckCreateTransactionHASH(Tr);
+        SERVER.CheckCreateTransactionObject(Tr);
     var Str = GetHexFromArr(Tr.HASH);
     return "Tx:" + Str.substr(0, 8);
 };

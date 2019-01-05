@@ -56,7 +56,7 @@ process.on('uncaughtException', function (err)
     }
     ToError(err.stack);
     ToLog(err.stack);
-    if(err.code === "ENOTFOUND" || err.code === "ECONNRESET")
+    if(err.code === "ENOTFOUND" || err.code === "ECONNRESET" || err.code === "EPIPE")
     {
     }
     else
@@ -162,23 +162,24 @@ function OnMessageWriter(msg)
     }
 };
 
-function StartAllProcess()
+function StartAllProcess(bClose)
 {
     for(var i = 0; i < ArrChildProcess.length; i++)
     {
         var Item = ArrChildProcess[i];
         StartChildProcess(Item);
     }
-    setInterval(function ()
-    {
-        if(global.DApps && DApps.Accounts)
+    if(bClose)
+        setInterval(function ()
         {
-            DApps.Accounts.Close();
-            DApps.Smart.DBSmart.Close();
-        }
-        if(WALLET && WALLET.DBHistory)
-            WALLET.DBHistory.Close();
-    }, 500);
+            if(global.DApps && DApps.Accounts)
+            {
+                DApps.Accounts.Close();
+                DApps.Smart.DBSmart.Close();
+            }
+            if(WALLET && WALLET.DBHistory)
+                WALLET.DBHistory.Close();
+        }, 500);
 };
 var GlobalRunID = 0;
 var GlobalRunMap = {};
@@ -243,7 +244,8 @@ function StartChildProcess(Item)
                         else
                             if(msg.cmd === "online")
                             {
-                                ToLog("RUNING " + ITEM.Name + " : " + msg.message + " pid: " + ITEM.Worker.pid);
+                                if(ITEM.Worker)
+                                    ToLog("RUNING " + ITEM.Name + " : " + msg.message + " pid: " + ITEM.Worker.pid);
                             }
                             else
                                 if(ITEM.OnMessage)
@@ -628,7 +630,7 @@ function RunOnce()
     {
         clearInterval(idRunOnce);
         RunOnUpdate();
-        StartAllProcess();
+        StartAllProcess(1);
         if(global.RESTART_PERIOD_SEC)
         {
             var Period = (random(600) + global.RESTART_PERIOD_SEC);
@@ -752,6 +754,8 @@ function Fork(Path,ArrArgs)
         ArrArgs.push("NOPARAMJS");
     if(global.NWMODE)
         ArrArgs.push("NWMODE");
+    if(global.NOALIVE)
+        ArrArgs.push("NOALIVE");
     glPortDebug++;
     var execArgv = [];
     var Worker = child_process.fork(Path, ArrArgs, {execArgv:execArgv});
@@ -807,6 +811,7 @@ function RecreateAccountHashDB()
         fs.unlinkSync(fname);
     }
 };
+global.TestSignLib = TestSignLib;
 
 function TestSignLib(MaxTime)
 {

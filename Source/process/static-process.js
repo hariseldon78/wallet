@@ -66,6 +66,8 @@ process.on('message', function (msg)
 
 function CheckAlive()
 {
+    if(global.NOALIVE)
+        return ;
     var Delta = Date.now() - LastAlive;
     if(Delta > CHECK_STOP_CHILD_PROCESS)
     {

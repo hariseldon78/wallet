@@ -1,81 +1,447 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <title>TERA</title>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta data-n-head="true" data-hid="description" name="description" content="Tera - Fast block generation, High transaction throughput, User-friendly">
+	<!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+
+	<title>TERA FOUNDATION</title>
+
+	<!-- Google font -->
+	<link href="https://fonts.googleapis.com/css?family=Montserrat:400,700%7CVarela+Round" rel="stylesheet">
+
+	<!-- Bootstrap -->
+	<link type="text/css" rel="stylesheet" href="CSS/bootstrap.min.css" />
+
+	<!-- Font Awesome Icon -->
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+
+	<!-- Custom stlylesheet -->
+	<link type="text/css" rel="stylesheet" href="CSS/style.min.css" />
 </head>
 
-<style type="text/css">
-    body
-    {
-        background-color2: black;
-        background: #282828;
-        color: white;
-        font-family: Kalinga;
-    }
-
-    .logo
-    {
-        top:10%;
-        left:0;
-    }
-    .title
-    {
-        font-size: 50px;
-    }
-
-    .openlink
-    {
-        height: 30px;
-        width: 150px;
-        padding: 6px;
-        cursor: pointer;
-        font-size: large;
-    }
-    .openlink:hover
-    {
-        padding: 5px;
-        border: 1px solid #264378;
-    }
-
-    #idStableScroll
-    {
-        z-index:0;
-        position:absolute;
-        bottom:10px;
-        height: 10px;
-        color: white;
-        width: 97%;
-        margin: auto;
-    }
-
-</style>
 <body>
-<DIV align='center'>
-    <DIV align='center' style="width: 800px;">
-        <svg version = "1.1"  class="logo"  height = "400px"  width = "480px">
-            <path transform="scale(2)" d="m116.5,2.58c0,0 114.5,187.5 114.5,187.5c0,0 -52.5,1 -52.5,1c0,0 -28,-44 -28,-44c0,0 -27,44 -27,44c0,0 -53.5,0 -53.5,0c0,0 54,-89 54,-89c0,0 -33.5,-57 -33.5,-57c0,0 26,-42.5 26,-42.5z" fill="rgb(250,250,250)" id="svg_2" stroke="#000000"/>
-            <path transform="scale(2)" d="m81.6,60.6c0,0 27,44 27,44c0,0 -53,87 -53,87c0,0 -54,-1 -54,-1c0,0 80,-130 80,-130z" fill="rgb(250,250,250)" id="svg_3" stroke="#000000"/>
-        </svg>
-        <DIV class="title">
-        TERA PLATFORM
-        </DIV>
-    </DIV>
+	<!-- Header -->
+	<header id="home">
+		<!-- Background Image -->
+		<div class="bg-img" style="background-image: url('./PIC/Tera_Web_BG.jpg');">
+			<div class="overlay"></div>
+		</div>
+		<!-- /Background Image -->
 
-    <DIV class="openlink" onclick="window.open('/explorer.html')">Explorer</DIV>
-    <DIV class="openlink" onclick="window.open('/map.html')">Network map</DIV>
-    <DIV class="openlink" onclick="window.open('/web-wallet.html')">Wallet</DIV>
+		<!-- Nav -->
+		<nav id="nav" class="navbar nav-transparent">
+			<div class="container">
+
+				<div class="navbar-header">
+					<!-- Logo -->
+					<div class="navbar-brand">
+						<a href="index.html">
+							<img class="logo" src="PIC/Tera_Text_gray.svg" alt="logo">
+							<img class="logo-alt" src="PIC/Tera_Text.svg" alt="logo">
+						</a>
+					</div>
+					<!-- /Logo -->
+
+					<!-- Collapse nav button -->
+					<div class="nav-collapse">
+						<span></span>
+					</div>
+					<!-- /Collapse nav button -->
+				</div>
+
+				<!--  Main navigation  -->
+				<ul class="main-nav nav navbar-nav navbar-right">
+					<li><a href="#portfolio">TECHNOLOGY</a></li>
+					<li><a href="http://teraminer.org/" target="_blank">START MINING</a></li>
+					<li><a href="/explorer.html">EXPLORER</a></li>
+					<li><a href="/web-wallet.html">WALLET</a></li>
+					<li><a href="/map.html">NETWORK MAP</a></li>
+				</ul>
+				<!-- /Main navigation -->
+
+			</div>
+		</nav>
+		<!-- /Nav -->
+
+		<!-- Social Header -->
+		<div class="home-wrapper">
+			<div class="container">
+
+                <!-- Row -->
+                <div class="row">
+    
+                    <div class="col-md-12">
+    
+                        <!-- Social follow -->
+                        <ul class="footer-follow" style="margin-bottom: 0px;">
+                            <li><a href="https://bitcointalk.org/index.php?topic=4573801.0" target="_blank"><i class="fab fa-btc"></i></a></li>
+                            <li><a href="https://twitter.com/terafoundation" target="_blank"><i class="fab fa-twitter"></i></a></li>
+                            <li><a href="https://discord.gg/CvwrbeG" target="_blank"><i class="fab fa-discord"></i></a></li>
+                            <li><a href="https://github.com/terafoundation/wallet" target="_blank"><i class="fab fa-github"></i></a></li>
+                            <li><a href="https://web.telegram.org/#/im?p=@terafoundation" target="_blank"><i class="fab fa-telegram-plane"></i></a></li>
+                        </ul>
+                        <!-- /Social follow -->
+    
+                    </div>
+    
+                </div>
+                <!-- /Row -->
+    
+            </div>
+		</div>
+		<!-- /About Tera -->
+
+	</header>
+    <!-- /Header -->
+
+	<!-- About Tera -->
+	<div id="features" class="section md-padding bg-grey">
+
+		<!-- Container -->
+		<div class="container">
+
+			<!-- Row -->
+			<div class="row">
+
+				<!-- About Tera content -->
+				<div class="col-md-12">
+					<div class="section-header text-center">
+						<h2 class="title">About Tera</h2>
+					</div>
+					<p style="text-align: justify;">
+                        It is our great pleasure to invite you to join us to mine TERA, a coin that offers solutions for issues of existing cryptocurrencies, namely centralization, transaction throughput, transaction speed, confirmation times, transaction fees and general usability and difficulty of integration into existing payment and financial systems.
+                    </p>
+					<p style="text-align: justify;">
+                        We have managed to create a blockchain with 1 second block time, 8 seconds for full confirmation of transfer and zero fees. On top of that TERA blockchain is capable of throughput of 1000 transactions per second while retaining all praised blockchain features and bringing huge possibilities for further development and seamless integration with existing infrastructure as well as with new emerging technologies.
+                    </p>
+				</div>
+				<!-- /About Tera content -->
+			</div>
+			<!-- /Row -->
+		</div>
+		<!-- /Container -->
+
+	</div>
+	<!-- /About Tera -->
+
+	<!-- Key Features -->
+	<div id="about" class="section md-padding">
+
+		<!-- Container -->
+		<div class="container">
+
+			<!-- Row -->
+			<div class="row">
+
+				<!-- Section header -->
+				<div class="section-header text-center">
+					<h2 class="title">Key Features</h2>
+				</div>
+				<!-- /Section header -->
+
+				<!-- Key Feature -->
+				<div class="col-md-4">
+					<div class="about bg-grey">
+                        <img src="PIC/fast.svg" alt="" style="margin-bottom: 12px">
+						<h4>Fast Block Generation</h3>
+						<p>TERA is fastest block genaration blockchain in decentralized blockchains. (Meaning that POS and the like are not decentralized...). With 1s block genaration and 8s to confirmation, your transaction is just edametaly</p>
+					</div>
+				</div>
+				<!-- /Key Feature -->
+
+				<!-- Key Feature -->
+				<div class="col-md-4">
+					<div class="about bg-grey">
+                        <img src="PIC/throughput.svg" alt="" style="margin-bottom: 12px">
+						<h4>High transaction throughput</h3>
+						<p>TERA blockchain is capable of throughput of 1000 transactions per second while retaining all praised blockchain features and bringing huge</p>
+					</div>
+				</div>
+				<!-- /Key Feature -->
+
+				<!-- Key Feature -->
+				<div class="col-md-4">
+					<div class="about bg-grey">
+                        <img src="PIC/namely.svg" alt="" style="margin-bottom: 12px;">
+						<h4>User-friendly</h4>
+						<p>The coins are kept in accounts by analogy like bank accounts.</p>
+					</div>
+				</div>
+				<!-- /Key Feature -->
+
+			</div>
+			<!-- /Row -->
+
+		</div>
+		<!-- /Container -->
+
+	</div>
+	<!-- /Key Features -->
 
 
+	<!-- Specification -->
+	<div id="portfolio" class="section md-padding bg-grey">
 
-    <DIV id="idStableScroll" align='center'>
-        <A href="https://bitcointalk.org/index.php?topic=4573801.0">ANN</A>
-        <A href="https://twitter.com/terafoundation">Twitter</A>
-        <A href="https://web.telegram.org/#/im?p=@terafoundation">Telegram</A>
-        <A href="https://discord.gg/CvwrbeG">Discord</A>
-        <A href="https://github.com/terafoundation/wallet">GitHub</A>
-        <!--progr76@gmail.com-->
-    </DIV>
-</DIV>
+		<!-- Container -->
+		<div class="container">
+
+			<!-- Row -->
+			<div class="row">
+
+				<!-- Section header -->
+				<div class="section-header">
+					<h2 class="title md-down-left">Specification</h2>
+				</div>
+				<!-- /Section header -->
+                <div class="no-more-tables">
+                    <table class="col-md-12 table-bordered table-striped table-condensed cf">
+                        <thead class="cf">
+                            <tr>
+                                <th>Max Supply</th>
+                                <th>Issue Date</th>
+                                <th>Consensus Protocol</th>
+                                <th>Type</th>
+                                <th>Cryptographic Algorithm</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td data-title="Max Supply">1,000,000,000</td>
+                                <td data-title="Issue Date">07/01/2018</td>
+                                <td data-title="Consensus Protocol">POW</td>
+                                <td data-title="Type">COIN</td>
+                                <td data-title="Consensus Protocol">TERAhash</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table class="col-md-12 table-bordered table-striped table-condensed cf">
+                        <thead class="cf">
+                            <tr>
+                                <th>Block Size</th>
+                                <th>Pre-mine</th>
+                                <th>Source Code</th>
+                                <th>Explorer</th>
+                                <th>Platform</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td data-title="Block Size">120 KB</td>
+                                <td data-title="Pre-mine">5%</td>
+                                <td data-title="Source Code">
+                                    <a href="https://github.com/terafoundation/wallet" target="_blank">https://github.com/terafoundation/wallet
+                                    </a>
+                                </td>
+                                <td data-title="Explorer">
+                                    <a href="https://terafoundation.org/explorer.html" target="_blank">https://terafoundation.org/explorer.html</a>
+                                </td>
+                                <td data-title="Platform">NodeJS</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+			</div>
+			<!-- /Row -->
+
+		</div>
+		<!-- /Container -->
+
+	</div>
+	<!-- /Specification -->
+
+	<!-- Roadmap -->
+	<div id="service" class="section md-padding">
+
+		<!-- Container -->
+		<div class="container">
+
+			<!-- Row -->
+			<div class="row">
+
+				<!-- Section header -->
+				<div class="section-header">
+					<h2 class="title md-down-left">Road map</h2>
+				</div>
+				<!-- /Section header -->
+                <div class="row flex wrap">
+                    <!-- Roadmap Item -->
+                    <div class="flex col-sm-12 col-md-3">
+                        <div class="roadmap-item">
+                            <div class="roadmap-item__line done">
+                                <span class="dot"></span>
+                            </div>
+                            <div class="roadmap-item__body">
+                                <div class="roadmap-item__date">
+                                    Oct 2018
+                                </div>
+                                <div class="roadmap-item__info">
+                                    <ul>
+                                        <li>
+                                            Smart-contracts
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /Roadmap Item -->
+
+                    <!-- Roadmap Item -->
+                    <div class="flex col-sm-12 col-md-3">
+                        <div class="roadmap-item">
+                            <div class="roadmap-item__line done">
+                                <span class="dot"></span>
+                            </div>
+                            <div class="roadmap-item__body">
+                                <div class="roadmap-item__date">
+                                    Nov 2018
+                                </div>
+                                <div class="roadmap-item__info">
+                                    <ul>
+                                        <li>
+                                            Decentralized forum
+                                        </li>
+                                        <li>
+                                            Decentralized stock exchange
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /Roadmap Item -->
+
+                     <!-- Roadmap Item -->
+                     <div class="flex col-sm-12 col-md-3">
+                        <div class="roadmap-item">
+                            <div class="roadmap-item__line done">
+                                <span class="dot"></span>
+                            </div>
+                            <div class="roadmap-item__body">
+                                <div class="roadmap-item__date">
+                                    Dec 2018
+                                </div>
+                                <div class="roadmap-item__info">
+                                    <ul>
+                                        <li>
+                                            Web wallet
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /Roadmap Item -->
+
+                     <!-- Roadmap Item -->
+                     <div class="flex col-sm-12 col-md-3">
+                        <div class="roadmap-item">
+                            <div class="roadmap-item__line processing">
+                                <span class="dot"></span>
+                            </div>
+                            <div class="roadmap-item__body">
+                                <div class="roadmap-item__date">
+                                    Q1 2019
+                                </div>
+                                <div class="roadmap-item__info">
+                                    <ul>
+                                        <li>
+                                            Android/iOS wallets
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /Roadmap Item -->
+                </div>
+
+			</div>
+			<!-- /Row -->
+
+		</div>
+		<!-- /Container -->
+
+	</div>
+	<!-- /Service -->
+
+
+	<!-- Footer -->
+	<footer id="footer" class="sm-padding bg-dark">
+
+		<!-- Container -->
+		<div class="container">
+
+			<!-- Row -->
+			<div class="row">
+
+				<div class="col-md-12">
+
+					<!-- footer logo -->
+					<div class="footer-logo">
+						<a href="index.html"><img src="PIC/Tera_logo.svg" alt="logo"></a>
+					</div>
+                    <!-- /footer logo -->
+                    <!-- footer links -->
+                    <div class="footer-link">
+                        <span class="footer-link-item">
+                            <a href="/explorer.html">EXPLORER</a>
+                        </span>
+                        <span class="footer-link-item">
+                            <a href="/web-wallet.html">WALLET</a>
+                        </span>
+                        <span class="footer-link-item">
+                            <a href="/map.html">NETWORK MAP</a>
+                        </span></div>
+					<!-- /footer links -->
+
+					<!-- footer follow -->
+					<ul class="footer-follow" style="margin-bottom: 0px;">
+                        <li><a href="https://bitcointalk.org/index.php?topic=4573801.0" target="_blank"><i class="fab fa-btc"></i></a></li>
+                        <li><a href="https://twitter.com/terafoundation" target="_blank"><i class="fab fa-twitter"></i></a></li>
+                        <li><a href="https://discord.gg/CvwrbeG" target="_blank"><i class="fab fa-discord"></i></a></li>
+                        <li><a href="https://github.com/terafoundation/wallet" target="_blank"><i class="fab fa-github"></i></a></li>
+                        <li><a href="https://web.telegram.org/#/im?p=@terafoundation" target="_blank"><i class="fab fa-telegram-plane"></i></a></li>
+                    </ul>
+					<!-- /footer follow -->
+
+
+				</div>
+
+			</div>
+			<!-- /Row -->
+
+		</div>
+		<!-- /Container -->
+
+	</footer>
+	<!-- /Footer -->
+
+	<!-- Back to top -->
+	<!-- <div id="back-to-top"></div> -->
+	<!-- /Back to top -->
+
+	<!-- Preloader -->
+	<div id="preloader">
+		<div class="preloader">
+			<span></span>
+			<span></span>
+			<span></span>
+			<span></span>
+		</div>
+	</div>
+	<!-- /Preloader -->
+
+	<!-- jQuery Plugins -->
+	<script type="text/javascript" src="js/jquery.min.js"></script>
+	<script type="text/javascript" src="js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="js/main.min.js"></script>
+
 </body>
+
 </html>

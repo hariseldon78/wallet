@@ -12,6 +12,8 @@
 "use strict";
 require('./library');
 require('./crypto-library');
+const TX_PROCESS_TIME = 100;
+const TX_DELTA_PROCESS_TIME = 300;
 global.CAN_START = false;
 global.StrWarn = "";
 global.SUM_LIST_LENGTH = 2 * BLOCK_PROCESSING_LENGTH;
@@ -83,7 +85,8 @@ module.exports = class CConsensus extends require("./block-loader")
         Context.TransferFromAddr = {}
         Context.LevelsTransfer = []
         Context.ErrRun = ""
-        Context.PowTree = new RBTree(CompareItemTimePow)
+        Context.PowTxTree = new RBTree(CompareItemTimePow)
+        Context.PowTicketTree = new RBTree(CompareItemTimePow)
         Context.bSave = false
         Context.PrevHash = undefined
         Context.TreeHash = undefined
@@ -150,7 +153,7 @@ module.exports = class CConsensus extends require("./block-loader")
         for(var i = 0; i < Array.length; i++)
         {
             var Item = Array[i];
-            this.CheckCreateTransactionHASH(Item)
+            this.CheckCreateTransactionObject(Item)
             Str += this.GetStrFromHashShort(shaarr(Item.body)) + "(" + Item.body.length + "),"
         }
         AddInfoBlock(Block, "" + StrInfo + ": Arr=[" + Str + "]")
@@ -182,20 +185,22 @@ module.exports = class CConsensus extends require("./block-loader")
             return ;
         }
         Transfer.WasGet = true
-        var ArrTT = [];
-        for(var i = 0; i < Data.TicketArray.length; i++)
-        {
-            var Tr = Data.TicketArray[i];
-            var Res = this.AddTicketToBlockQuote(Block, Tr);
-            if(Res === 1)
-            {
-                Tr.GetTicketNode = Node
-                Tr.GetTicketTime = CurTime
-                ArrTT.push(Tr)
-            }
-        }
+        if(global.DoTxLog && Data.TicketArray.length)
+            ToLog("TRANSFER BlockNum:" + Block.BlockNum + " TicketArray=" + Data.TicketArray.length + " from " + NodeName(Node))
         this.ToMaxPOWList(Data.MaxPOW)
         this.ToMaxSumList(this.GetMaxSumListFromID(Node, Data.MaxSumID, Data.BlockList))
+        for(var i = 0; i < Data.TicketArray.length; i++)
+        {
+            var Tr = this.AddTicketToBlockQuote(Block, Data.TicketArray[i]);
+            if(Tr)
+            {
+                if(!Tr.NodesList)
+                    Tr.NodesList = []
+                else
+                    var Stop = 1;
+                Tr.NodesList.push(Node)
+            }
+        }
         ADD_TO_STAT_TIME("TRANSFER_MS", startTime)
         var Delta = Date.now() - this.StartLoadBlockTime;
         if(Delta > 10 * 1000 && Node.TransferCount > 10)
@@ -207,20 +212,11 @@ module.exports = class CConsensus extends require("./block-loader")
         Node.LastTimeTransfer = GetCurrentTime() - 0
         var Item = Transfer.TransferNodes[Key];
         Item.GetTiming = GetCurrentTime(Block.DELTA_CURRENT_TIME) - Block.StartTimeNum
-        if(!Block.TransferNodes)
-            Block.TransferNodes = 0
-        Block.TransferNodes++
-        if(!ArrTT.length)
-            return ;
-        var SendData = {"Method":"GETTRANSFERTX", "Context":Info.Context, "Data":{BlockNum:Block.BlockNum, TicketArray:ArrTT, }};
-        this.SendF(Node, SendData, ArrTT.length * global.TR_TICKET_HASH_LENGTH + 1000)
+        if(!Block.TransferNodesCount)
+            Block.TransferNodesCount = 0
+        Block.TransferNodesCount++
     }
-    static
-    GETTRANSFERTX_F()
-    {
-        return "{BlockNum:uint, TicketArray:[{HashTicket:arr10}]}";
-    }
-    GETTRANSFERTX(Info, CurTime)
+    TRANSFERTX(Info, CurTime)
     {
         var Data = this.DataFromF(Info);
         var Node = Info.Node;
@@ -229,40 +225,80 @@ module.exports = class CConsensus extends require("./block-loader")
         {
             return ;
         }
-        this.SendTrByTickets(Info, Node, Block, Data.TicketArray, 0)
+        if(global.DoTxLog)
+            ToLog("TRANSFERTX BlockNum:" + Block.BlockNum + " Array=" + Data.Array.length + " from " + NodeName(Node))
+        for(var i = 0; i < Data.Array.length; i++)
+        {
+            this.AddTrToBlockQuote(Block, Data.Array[i])
+        }
     }
-    SendTrByTickets(Info, Node, Block, ArrTT, bForce)
+    static
+    TRANSFERTX_F()
     {
-        if(!Block.PowTree)
+        return "{BlockNum:uint, Array:[{body:tr}]}";
+    }
+    static
+    GETTRANSFERTX_F()
+    {
+        return "{BlockNum:uint, TicketArray:[{HashTicket:arr10}]}";
+    }
+    GETTRANSFERTX(Info, CurTime)
+    {
+        return ;
+        var Data = this.DataFromF(Info);
+        var Node = Info.Node;
+        var Block = this.GetBlockContext(Data.BlockNum);
+        if(!Block)
+        {
+            return ;
+        }
+        this.SendTrByTickets(Info, Node, Block, Data.TicketArray, 10)
+    }
+    CanSendTest()
+    {
+        return 1;
+    }
+    SendTrByTickets(Info, Node, Block, ArrTT, CountTrySend)
+    {
+        if(!Block.PowTxTree)
             return ;
         var Arr = [];
+        var bFindTT = 0;
+        var BufLength = 0;
         for(var i = 0; i < ArrTT.length; i++)
         {
             var Tr = ArrTT[i];
-            this.CheckCreateByTicket(Tr, Block.BlockNum)
-            var Tr0 = Block.PowTree.find(Tr);
+            this.CheckCreateTicketObject(Tr, Block.BlockNum)
+            var Tr0 = Block.PowTxTree.find(Tr);
             if(Tr0)
             {
                 if(Tr0.IsTx)
                 {
-                    Arr.push(Tr0)
+                    if(this.CanSendTest())
+                        Arr.push(Tr0)
+                    BufLength += Tr0.body.length
+                    if(BufLength > MAX_BLOCK_SIZE)
+                        break;
                 }
                 else
-                    if(!bForce)
-                    {
-                        let SELF = this;
-                        setTimeout(function ()
-                        {
-                            SELF.SendTrByTickets(Info, Node, Block, ArrTT, 1)
-                        }, 200)
-                        return ;
-                    }
+                {
+                    bFindTT = 1
+                }
             }
+        }
+        if(bFindTT && CountTrySend)
+        {
+            let SELF = this;
+            setTimeout(function ()
+            {
+                SELF.SendTrByTickets(Info, Node, Block, ArrTT, CountTrySend - 1)
+            }, 100)
+            return ;
         }
         if(!Arr.length)
             return ;
         var SendData = {"Method":"RETTRANSFERTX", "Context":Info.Context, "Data":{BlockNum:Block.BlockNum, Array:Arr, }};
-        this.SendF(Node, SendData, 150000)
+        this.SendF(Node, SendData, global.MAX_BLOCK_SIZE + 1000)
     }
     static
     RETTRANSFERTX_F()
@@ -271,29 +307,29 @@ module.exports = class CConsensus extends require("./block-loader")
     }
     RETTRANSFERTX(Info, CurTime)
     {
+        return ;
         var Data = this.DataFromF(Info);
         var Node = Info.Node;
         Node.TransferBlockNum = Data.BlockNum
         var Block = this.GetBlockContext(Data.BlockNum);
-        if(!Block || !Block.PowTree)
+        if(!Block || !Block.PowTxTree)
         {
             return ;
         }
+        if(global.DoTxLog)
+            ToLog("RETTRANSFERTX BlockNum:" + Block.BlockNum + " Array=" + Data.Array.length + " from " + NodeName(Node))
         for(var i = 0; i < Data.Array.length; i++)
         {
             var Tr = Data.Array[i];
-            this.CheckCreateTransactionHASH(Tr)
-            var Tr0 = Block.PowTree.find(Tr);
+            this.CheckCreateTransactionObject(Tr)
+            var Tr0 = Block.PowTxTree.find(Tr);
             if(Tr0)
             {
                 if(!Tr0.IsTx)
                 {
                     Tr0.IsTx = 1
                     Tr0.body = Tr.body
-                    if(Tr0.num >= global.BLOCKNUM_TICKET_ALGO)
-                        Tr0.HASH = sha3(Tr.body)
-                    else
-                        Tr0.HASH = shaarr(Tr.body)
+                    Tr0.HASH = Tr.HASH
                 }
             }
         }
@@ -304,8 +340,8 @@ module.exports = class CConsensus extends require("./block-loader")
             return ;
         if(!CAN_START)
             return ;
-        var MaxPOWList = this.GetMaxPOWList();
-        var MaxSumList = this.GetMaxSumList();
+        var MaxPOWList;
+        var MaxSumList;
         var start = this.CurrentBlockNum - BLOCK_PROCESSING_LENGTH;
         var finish = this.GetLastCorrectBlockNum();
         for(var b = start; b <= finish; b++)
@@ -317,6 +353,7 @@ module.exports = class CConsensus extends require("./block-loader")
                 continue;
             if(!Block.Active)
                 continue;
+            this.DoJobListTX(Block)
             if(Block.MLevelSend < 0)
             {
                 this.CheckEndExchange(Block)
@@ -327,7 +364,12 @@ module.exports = class CConsensus extends require("./block-loader")
             var Transfer = Block.LevelsTransfer[Block.MLevelSend];
             if(!Transfer.WasSend)
             {
-                var arrTt = this.GetArrayFromTree(Block, "TT");
+                if(!MaxPOWList)
+                {
+                    MaxPOWList = this.GetMaxPOWList()
+                    MaxSumList = this.GetMaxSumList()
+                }
+                var arrTt = this.GetArrayFromTicketTree(Block);
                 this.SendDataTransfer(Transfer, arrTt, MaxPOWList, MaxSumList, Block)
             }
             Transfer.WasSend = true
@@ -354,7 +396,6 @@ module.exports = class CConsensus extends require("./block-loader")
                 if(Block.MLevelSend === 0)
                 {
                     Block.EndExchangeTime = Date.now()
-                    this.CheckEndExchange(Block)
                 }
                 Block.MLevelSend--
             }
@@ -362,26 +403,170 @@ module.exports = class CConsensus extends require("./block-loader")
     }
     CheckEndExchange(Block)
     {
-        if(Block.EndExchange)
+        if(Block.EndExchange || !Block.JobListTX || !Block.EndExchangeTime)
             return ;
-        var bFindTicket = 0;
-        if(!Block.EndExchangeTime)
-            Block.EndExchangeTime = Date.now()
-        var Delta = Date.now() - Block.EndExchangeTime;
-        if(Delta < 1000)
+        var CurTime = Date.now();
+        var Delta = CurTime - Block.EndExchangeTime;
+        if(Delta >= TX_DELTA_PROCESS_TIME * 2)
         {
-            var it = Block.PowTree.iterator(), Item;
-            while((Item = it.next()) !== null)
+            if(global.DoTxLog)
+                ToLog("END:" + Block.BlockNum + " -> CreateTreeHash")
+            this.CreateTreeHash(Block)
+        }
+    }
+    DoJobListTX(Block)
+    {
+        if(Block.EndExchange || !Block.JobListTX || !Block.PowTicketTree)
+            return ;
+        var ArrTx;
+        var CurTime = Date.now();
+        for(var i = 0; i < Block.JobListTX.length; i++)
+        {
+            var JobItem = Block.JobListTX[i];
+            var Delta = CurTime - JobItem.Time;
+            if(!JobItem.WasSend && Delta >= TX_DELTA_PROCESS_TIME)
             {
-                if(!Item.IsTx)
+                JobItem.WasSend = 1
+                if(!ArrTx)
+                    ArrTx = this.GetArrayFromTxTree(Block)
+                var Arr = this.FilterArrForSendNode(Block, JobItem.Node, ArrTx);
+                if(!Arr.length)
+                    return ;
+                if(global.DoTxLog)
+                    ToLog("DoJobListTX BlockNum:" + Block.BlockNum + "  Arr=" + Arr.length + " to " + NodeName(JobItem.Node))
+                var SendData = {"Method":"TRANSFERTX", "Context":{}, "Data":{BlockNum:Block.BlockNum, Array:Arr, }};
+                this.SendF(JobItem.Node, SendData, global.MAX_BLOCK_SIZE + 1000)
+            }
+        }
+    }
+    FindNodeTicket(Block, Tr, Node, bTt)
+    {
+        var Ticket;
+        if(bTt)
+            Ticket = Tr
+        else
+            Ticket = Block.PowTicketTree.find(Tr)
+        if(Ticket.NodesList)
+        {
+            for(var n = 0; n < Ticket.NodesList.length; n++)
+            {
+                var NodeItem = Ticket.NodesList[n];
+                if(NodeItem === Node)
                 {
-                    bFindTicket = 1
-                    break;
+                    return 1;
                 }
             }
         }
-        if(!bFindTicket)
+        return 0;
+    }
+    FilterArrForSendNode(Block, Node, ArrTx, bTt)
+    {
+        var Arr = [];
+        for(var t = 0; t < ArrTx.length; t++)
+        {
+            var Tr = ArrTx[t];
+            if(this.FindNodeTicket(Block, Tr, Node, bTt))
+                continue;
+            Arr.push(Tr)
+        }
+        return Arr;
+    }
+    CheckEndExchange00(Block)
+    {
+        if(Block.EndExchange)
+            return ;
+        var CurTime = Date.now();
+        var CanEnd = 1;
+        var bSend = 0;
+        var it = Block.PowTxTree.iterator(), Tr;
+        while((Tr = it.next()) !== null)
+        {
+            if(!Tr.IsTx)
+            {
+                if(!Tr.LastProcessTime)
+                    throw "!Tr.LastProcessTime";
+                var Delta = CurTime - Tr.LastProcessTime;
+                if(Delta < TX_PROCESS_TIME * 10)
+                {
+                    bSend = 1
+                    CanEnd = 0
+                    break;
+                }
+                else
+                {
+                    var Stop = 1;
+                }
+            }
+        }
+        if(CanEnd)
+        {
+            if(global.DoTxLog)
+                ToLog("END:" + Block.BlockNum + " -> CreateTreeHash")
             this.CreateTreeHash(Block)
+        }
+        else
+            if(bSend)
+            {
+                this.CheckTxExchange(Block, bSend)
+            }
+    }
+    CheckTxExchange(Block)
+    {
+        return ;
+        if(Block.EndExchange)
+            return ;
+        if(!Block.PowTxTree)
+            return ;
+        var CurTime = Date.now();
+        var ArrNodesArr = [];
+        var it = Block.PowTxTree.iterator(), Tr;
+        while((Tr = it.next()) !== null)
+        {
+            if(!Tr.IsTx)
+            {
+                if(!Tr.LastProcessTime)
+                    throw "!Tr.LastProcessTime";
+                var Delta = CurTime - Tr.LastProcessTime;
+                if(Delta >= TX_PROCESS_TIME)
+                {
+                    for(var i = 0; i < Tr.Nodes.length; i++)
+                    {
+                        var TrNode = Tr.Nodes[i];
+                        var LocDelta = CurTime - TrNode.Time;
+                        if(!TrNode.WasSend && LocDelta >= TX_PROCESS_TIME)
+                        {
+                            var FindArr = undefined;
+                            for(var n = 0; n < ArrNodesArr.length; n++)
+                            {
+                                var ElArr = ArrNodesArr[n];
+                                if(ElArr.Node === TrNode.Node)
+                                {
+                                    FindArr = ElArr
+                                    break;
+                                }
+                            }
+                            if(!FindArr)
+                            {
+                                FindArr = {Node:TrNode.Node, Arr:[]}
+                                ArrNodesArr.push(FindArr)
+                            }
+                            Tr.LastProcessTime = CurTime
+                            TrNode.WasSend = 1
+                            FindArr.Arr.push(Tr)
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        for(var n = 0; n < ArrNodesArr.length; n++)
+        {
+            var ElArr = ArrNodesArr[n];
+            if(global.DoTxLog)
+                ToLog("CheckTxExchange BlockNum:" + Block.BlockNum + " Array=" + ElArr.Arr.length + " to " + NodeName(ElArr.Node))
+            var SendData = {"Method":"GETTRANSFERTX", "Context":{}, "Data":{BlockNum:Block.BlockNum, TicketArray:ElArr.Arr, }};
+            this.SendF(ElArr.Node, SendData, ElArr.Arr.length * global.TR_TICKET_HASH_LENGTH + 1000)
+        }
     }
     SendDataTransfer(Transfer, arrTt, MaxPOWList, MaxSumList, Block)
     {
@@ -413,8 +598,14 @@ module.exports = class CConsensus extends require("./block-loader")
                     arrSum.push(elem)
                 }
             }
-            var BufData = this.CreateTransferBuffer(arrTt, arrPow, arrSum, Block, Item.Node);
+            var Arr = this.FilterArrForSendNode(Block, Item.Node, arrTt, 1);
+            if(global.DoTxLog)
+                ToLog("SEND TRANSFER BlockNum:" + Block.BlockNum + " Arr=" + Arr.length + " to " + NodeName(Item.Node))
+            var BufData = this.CreateTransferBuffer(Arr, arrPow, arrSum, Block, Item.Node);
             this.Send(Item.Node, {"Method":"TRANSFER", "Context":{}, "Data":BufData}, 1)
+            if(!Block.JobListTX)
+                Block.JobListTX = []
+            Block.JobListTX.push({Node:Item.Node, TreeLevel:Item.TreeLevel, Time:Date.now()})
         }
     }
     GetMaxSumListFromID(Node, MaxSumID, BlockList)
@@ -482,48 +673,6 @@ module.exports = class CConsensus extends require("./block-loader")
     TRANSFER_F()
     {
         return FORMAT_DATA_TRANSFER;
-    }
-    SendControlData(Transfer, BufData, BlockNum, TreeHash, typedata)
-    {
-        return ;
-        for(var Addr in Transfer.TransferNodes)
-        {
-            var Item = Transfer.TransferNodes[Addr];
-            Transfer.SendCount++
-            var SendData = {"Method":"CONTROLHASH", "Context":{BufData:BufData}, "Data":{TreeHash:TreeHash, BlockNum:BlockNum, }};
-            this.SendF(Item.Node, SendData)
-        }
-    }
-    static
-    CONTROLHASH_F()
-    {
-        return "{TreeHash:hash,BlockNum:uint}";
-    }
-    CONTROLHASH(Info, CurTime)
-    {
-        return ;
-        var Data = this.DataFromF(Info);
-        var Block = this.GetBlockContext(Data.BlockNum);
-        if(!Block || Block.StartLevel === undefined)
-            return ;
-        var arrTr = this.GetArrayFromTree(Block, "TT");
-        var TreeHash = this.CalcTreeHashFromArrTr(Block.BlockNum, arrTr);
-        if(CompareArr(TreeHash, Data.TreeHash) !== 0)
-        {
-            this.SendF(Info.Node, {"Method":"GETTRANSFER", "Context":Info.Context, "Data":{BlockNum:Block.BlockNum, }})
-        }
-        else
-        {
-        }
-    }
-    static
-    GETTRANSFER_F()
-    {
-        return "{BlockNum:uint}";
-    }
-    GETTRANSFER(Info, CurTime)
-    {
-        return ;
     }
     CheckingMaxPowOther(Block)
     {
@@ -772,42 +921,48 @@ module.exports = class CConsensus extends require("./block-loader")
         }
         return SumPow;
     }
-    GetArrayFromTree(Block, Type, FNode)
+    GetArrayFromTxTree(Block)
     {
-        if(!Block.PowTree)
+        if(!Block.PowTxTree)
             return [];
         var BufLength = 0;
         var arr = [];
-        var it = Block.PowTree.iterator(), Item;
+        var it = Block.PowTxTree.iterator(), Item;
         while((Item = it.next()) !== null)
         {
-            if(Type === "TX" && !Item.IsTx)
-            {
-                continue;
-            }
             arr.push(Item)
-            if(!Item.IsTx)
-                continue;
             BufLength += Item.body.length
             if(BufLength > MAX_BLOCK_SIZE)
                 break;
         }
         return arr;
     }
-    AddTrToQuote(Block, Tr)
+    GetArrayFromTicketTree(Block)
     {
-        var Tr0 = Block.PowTree.find(Tr);
+        if(!Block.PowTicketTree)
+            return [];
+        var arr = [];
+        var it = Block.PowTicketTree.iterator(), Item;
+        while((Item = it.next()) !== null)
+        {
+            arr.push(Item)
+        }
+        return arr;
+    }
+    AddToQuote(Tree, Tr)
+    {
+        var Tr0 = Tree.find(Tr);
         if(Tr0)
         {
             return 3;
         }
         else
         {
-            Block.PowTree.insert(Tr)
-            if(Block.PowTree.size > MAX_TRANSACTION_LIMIT)
+            Tree.insert(Tr)
+            if(Tree.size > MAX_TRANSACTION_LIMIT)
             {
-                var maxitem = Block.PowTree.max();
-                Block.PowTree.remove(maxitem)
+                var maxitem = Tree.max();
+                Tree.remove(maxitem)
                 if(CompareArr(maxitem.HashPow, Tr.HashPow) === 0)
                     return 0;
             }
@@ -816,26 +971,28 @@ module.exports = class CConsensus extends require("./block-loader")
     }
     AddTicketToBlockQuote(Block, Tr)
     {
-        if(Block.PowTree)
+        if(Block.PowTicketTree)
         {
             var Res = this.IsValidTicket(Tr, Block.BlockNum);
             if(Res >= 1)
             {
-                Res = this.AddTrToQuote(Block, Tr)
+                Res = this.AddToQuote(Block.PowTicketTree, Tr)
+                if(Res)
+                    return Block.PowTicketTree.find(Tr);
             }
-            return Res;
+            return null;
         }
     }
     AddTrToBlockQuote(Block, Tr)
     {
-        if(Block.PowTree)
+        if(Block.PowTxTree)
         {
-            if(Block.Active)
-                return  - 3;
             var Res = this.IsValidTransaction(Tr, Block.BlockNum);
             if(Res >= 1)
             {
-                Res = this.AddTrToQuote(Block, Tr)
+                Res = this.AddToQuote(Block.PowTicketTree, Tr)
+                if(Res >= 1)
+                    Res = this.AddToQuote(Block.PowTxTree, Tr)
             }
             return Res;
         }
@@ -987,10 +1144,10 @@ module.exports = class CConsensus extends require("./block-loader")
             AddInfoBlock(Block, "Prev Not End Exchange")
             return ;
         }
-        AddInfoBlock(Block, "End Exchange,N=" + Block.TransferNodes)
+        AddInfoBlock(Block, "End Exchange,N=" + Block.TransferNodesCount)
         var arrContent = [];
         var arrHASH = [];
-        var arrTr = this.GetArrayFromTree(Block, "TX");
+        var arrTr = this.GetArrayFromTxTree(Block);
         this.AddDAppTransactions(Block.BlockNum, arrTr)
         for(var i = 0; i < arrTr.length; i++)
         {
@@ -1118,10 +1275,10 @@ module.exports = class CConsensus extends require("./block-loader")
                     Block.MaxPOW = undefined
                     Block.MaxSum = undefined
                     Block.arrContent = undefined
-                    if(Block.PowTree)
+                    if(Block.PowTxTree)
                     {
-                        Block.PowTree.clear()
-                        Block.PowTree = undefined
+                        Block.PowTxTree.clear()
+                        Block.PowTxTree = undefined
                     }
                 }
                 continue;

@@ -29,32 +29,32 @@ function ReadItem(e,t)
 
 function FindItem(e,t,i)
 {
-    var a, n = Math.trunc(e.length / t), r = (ReadItem(0, t), ReadItem(n, t), 0), u = n, o = Math.trunc(i * n / 4294967296);
-    for(n <= o && (o = n - 1), o < r && (o = r); ; )
+    var n, r = Math.trunc(e.length / t), a = (ReadItem(0, t), ReadItem(r, t), 0), u = r, o = Math.trunc(i * r / 4294967296);
+    r <= o && (o = r - 1), o < a && (o = a);
+    for(var f = 40; 0 < f; )
     {
-        if(!(a = ReadItem(o, t)))
-            throw "Error read num";
-        if(a.Value > i)
+        if(f--, !(n = ReadItem(o, t)))
+            return void ToLog("GEO FindItem - Error read num: " + o);
+        if(n.Value > i)
         {
-            if(u = o - 1, 0 === (f = o - r))
+            if(u = o - 1, 0 === (l = o - a))
                 return ;
-            o -= f = Math.trunc((1 + f) / 2);
+            o -= l = Math.trunc((1 + l) / 2);
         }
         else
-            if(a.Value < i)
+            if(n.Value < i)
             {
-                if(a.Value + a.Length >= i)
-                    break;
-                var f;
-                if(r = o + 1, 0 === (f = u - o))
+                if(n.Value + n.Length >= i)
+                    return n;
+                var l;
+                if(a = o + 1, 0 === (l = u - o))
                     return ;
-                o += f = Math.trunc((1 + f) / 2);
+                o += l = Math.trunc((1 + l) / 2);
             }
             else
-                if(a.Value === i)
-                    break;
+                if(n.Value === i)
+                    return n;
     }
-    return a;
 };
 
 function Init()
@@ -67,14 +67,14 @@ function Init()
             var i = e.indexOf("\n", t);
             if(i < 0)
                 break;
-            var a = e.toString("utf-8", t, i - 1);
+            var n = e.toString("utf-8", t, i - 1);
             t = i + 1;
-            var n = a.split(","), r = parseInt(n[0]);
-            if(r)
+            var r = n.split(","), a = parseInt(r[0]);
+            if(a)
             {
                 0;
-                var u = n[10];
-                u || (u = n[7]), u || (u = n[5]), MapNames[r] = u;
+                var u = r[10];
+                u || (u = r[7]), u || (u = r[5]), MapNames[a] = u;
             }
         }
     }

@@ -9,7 +9,7 @@
  * Telegram: https://web.telegram.org/#/im?p=@terafoundation
 */
 
-var DELTA_LONG_MINING = 5e3, BLOCKNUM_ALGO2 = 656e4, BLOCKNUM_HASH_NEW = 10195e3;
+var DELTA_LONG_MINING = 5e3, BLOCKNUM_ALGO2 = 656e4, BLOCKNUM_HASH_NEW = 10195e3, BLOCKNUM_TICKET_ALGO = 1607e4;
 
 function GetHashFromSeqAddr(r,o,a,e)
 {
@@ -18,18 +18,18 @@ function GetHashFromSeqAddr(r,o,a,e)
         var t = shaarrblock2(r, o, a);
         return {Hash:t, PowHash:t, Hash1:t, Hash2:t};
     }
-    var n = ReadUintFromArr(o, 0), i = ReadUintFromArr(o, 6), s = ReadUintFromArr(o, 12), A = ReadUintFromArr(o, 18), l = ReadUint16FromArr(o,
+    var n = ReadUintFromArr(o, 0), i = ReadUintFromArr(o, 6), A = ReadUintFromArr(o, 12), s = ReadUintFromArr(o, 18), l = ReadUint16FromArr(o,
     24), u = ReadUint16FromArr(o, 26);
-    return GetHash(r, ReadUint32FromArr(e || o, 28), a, n, i, s, A, l, u);
+    return GetHash(r, ReadUint32FromArr(e || o, 28), a, n, i, A, s, l, u);
 };
 
-function GetHash(r,o,a,e,t,n,i,s,A)
+function GetHash(r,o,a,e,t,n,i,A,s)
 {
-    DELTA_LONG_MINING < s && (s = 0), DELTA_LONG_MINING < A && (A = 0);
-    var l = GetHashFromNum2(a, o), u = GetHashFromArrNum2(r, e, t), h = GetHashFromNum3(a - s, e, n), f = GetHashFromNum3(a - A,
+    DELTA_LONG_MINING < A && (A = 0), DELTA_LONG_MINING < s && (s = 0);
+    var l = GetHashFromNum2(a, o), u = GetHashFromArrNum2(r, e, t), h = GetHashFromNum3(a - A, e, n), f = GetHashFromNum3(a - s,
     e, i), m = XORArr(l, h), H = XORArr(u, f), c = {Hash:H, Hash1:m, Hash2:H};
-    return 0 < CompareArr(m, H) ? c.PowHash = m : c.PowHash = H, BLOCKNUM_HASH_NEW <= a && (a >= global.BLOCKNUM_TICKET_ALGO ? c.Hash = sha3arr2(m,
-    H) : c.Hash = shaarr2(m, H)), c;
+    return 0 < CompareArr(m, H) ? c.PowHash = m : c.PowHash = H, BLOCKNUM_HASH_NEW <= a && (c.Hash = BLOCKNUM_TICKET_ALGO <= a ? sha3arr2(m,
+    H) : shaarr2(m, H)), c;
 };
 
 function CalcHashBlockFromSeqAddr(r,o)
@@ -224,9 +224,9 @@ function GetBlockArrFromBuffer(r)
         {
             16 === n && (u.SumHash = ReadArrFromArr(r, 32), u.SumPow = ReadUintFromArr(r)), u.TreeHash = ReadArrFromArr(r, 32), u.AddrHash = ReadArrFromArr(r,
             32);
-            for(var i = [], s = n - 16, A = 0; A < 8; A++)
+            for(var i = [], A = n - 16, s = 0; s < 8; s++)
             {
-                var l = t[s + A];
+                var l = t[A + s];
                 i.push(l.Hash);
             }
             u.PrevHash = CalcHashFromArray(i, !0), u.SeqHash = GetSeqHash(u.BlockNum, u.PrevHash, u.TreeHash), CalcHashBlockFromSeqAddr(u,
@@ -252,7 +252,7 @@ function shaarrblock2(r,o,a)
 };
 "object" == typeof global && (global.GetHashFromSeqAddr = GetHashFromSeqAddr, global.CalcHashBlockFromSeqAddr = CalcHashBlockFromSeqAddr,
 global.GetHashFromNum2 = GetHashFromNum2, global.GetHashFromNum3 = GetHashFromNum3, global.GetHashFromArrNum2 = GetHashFromArrNum2,
-global.XORArr = XORArr, global.GetHash = GetHash, (global.LOCAL_RUN || global.TEST_NETWORK) && (BLOCKNUM_ALGO2 = 0, BLOCKNUM_HASH_NEW = 1e3)),
+global.XORArr = XORArr, global.GetHash = GetHash, (global.LOCAL_RUN || global.TEST_NETWORK) && (BLOCKNUM_HASH_NEW = 1e3, BLOCKNUM_TICKET_ALGO = BLOCKNUM_ALGO2 = 0)),
 "object" == typeof global && (global.ReadUint32FromArr = ReadUint32FromArr, global.ReadUintFromArr = ReadUintFromArr, global.ReadUint16FromArr = ReadUint16FromArr,
 global.WriteUintToArr = WriteUintToArr, global.WriteUint32ToArr = WriteUint32ToArr, global.WriteUint32ToArrOnPos = WriteUint32ToArrOnPos,
 global.WriteUint16ToArrOnPos = WriteUint16ToArrOnPos, global.WriteUintToArrOnPos = WriteUintToArrOnPos, global.WriteArrToArr = WriteArrToArr,

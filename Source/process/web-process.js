@@ -74,6 +74,8 @@ process.on('message', function (msg)
 
 function CheckAlive()
 {
+    if(global.NOALIVE)
+        return ;
     var Delta = Date.now() - LastAlive;
     if(Delta > CHECK_STOP_CHILD_PROCESS)
     {
@@ -147,34 +149,11 @@ else
     RunListenServer();
 }
 
-function MainHTTPFunction(request,response0)
+function MainHTTPFunction(request,response)
 {
     if(!request.socket || !request.socket.remoteAddress)
         return ;
-    let RESPONSE = response0;
-    var response = {end:function (data)
-        {
-            try
-            {
-                RESPONSE.end(data);
-            }
-            catch(e)
-            {
-                ToError("H##4");
-                ToError(e);
-            }
-        }, writeHead:function (num,data)
-        {
-            try
-            {
-                RESPONSE.writeHead(num, data);
-            }
-            catch(e)
-            {
-                ToError("H##5");
-                ToError(e);
-            }
-        }, };
+    SetSafeResponce(response);
     var DataURL = url.parse(request.url);
     var Params = querystring.parse(DataURL.query);
     var Path = querystring.unescape(DataURL.pathname);
@@ -282,7 +261,7 @@ function DoCommandNew(response,Type,Path,Params)
     switch(Method)
     {
         case "":
-            SendFileHTML(response, "./SITE/index.html", undefined, true);
+            SendWebFile(response, "./SITE/index.html", undefined, true);
             break;
         case "file":
             SendBlockFile(response, ArrPath[1], ArrPath[2]);
@@ -328,17 +307,17 @@ function DoCommandNew(response,Type,Path,Params)
                     case "ico":
                         Name = PrefixPath + "/PIC/" + Name;
                         break;
-                    case "eot":
-                    case "woff":
-                    case "woff2":
-                    case "ttf":
-                        Name = PrefixPath + "/FONTS/" + Name;
+                    case "pdf":
+                    case "zip":
+                    case "exe":
+                    case "msi":
+                        Name = PrefixPath + "/FILES/" + Name;
                         break;
                     default:
                         Name = PrefixPath + "/" + Name;
                         break;
                 }
-                SendFileHTML(response, Name, Path);
+                SendWebFile(response, Name, Path);
                 break;
             }
     }
@@ -437,7 +416,7 @@ HostingCaller.GetNodeList = function (Params)
 {
     var arr = [];
     var List;
-    if(Params.All)
+    if(Params && Params.All)
         List = AllNodeList;
     else
         List = HostNodeList;
@@ -468,7 +447,7 @@ HostingCaller.GetNodeList = function (Params)
             Item = List[i];
         }
         var Value = {ip:Item.ip, port:Item.portweb, };
-        if(Params.Geo)
+        if(Params && Params.Geo)
         {
             if(!Item.Geo)
                 SetGeoLocation(Item);
