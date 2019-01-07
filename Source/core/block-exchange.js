@@ -36,6 +36,7 @@ var FORMAT_DATA_TRANSFER = "{\
         BlockList:[{ID:uint16, AddrHash:hash,SeqHash:hash}],\
         TicketArray:[{HashTicket:arr10}],\
         TxArray:[{body:tr}],\
+        NoSendTx:uint,\
         }";
 const WorkStructSend = {};
 module.exports = class CConsensus extends require("./block-loader")
@@ -192,12 +193,15 @@ module.exports = class CConsensus extends require("./block-loader")
             ToLog("TRANSFER BlockNum:" + Block.BlockNum + " TxArray=" + Data.TxArray.length + " from " + NodeName(Node))
         this.ToMaxPOWList(Data.MaxPOW)
         this.ToMaxSumList(this.GetMaxSumListFromID(Node, Data.MaxSumID, Data.BlockList))
+        var WasNewAdd = 0;
         if(Data.TxArray.length)
         {
             for(var i = 0; i < Data.TxArray.length; i++)
             {
                 var Tr = Data.TxArray[i];
                 var Res = this.AddTrToBlockQuote(Block, Tr);
+                if(Res === 1)
+                    WasNewAdd = 1
                 if(global.USE_CHECK_SENDING && Res > 0)
                 {
                     var Tt = Block.PowTxTree.find(Tr);
@@ -206,6 +210,7 @@ module.exports = class CConsensus extends require("./block-loader")
                         if(!Tt.NodesList)
                             Tt.NodesList = []
                         Tt.NodesList.push(Node)
+                        Tt.TreeLevel = Transfer.TreeLevel
                     }
                 }
             }
@@ -367,6 +372,17 @@ module.exports = class CConsensus extends require("./block-loader")
                 Arr = this.FilterArrForSendNode(Block, Item.Node, ArrT, global.USE_TICKET)
             else
                 Arr = ArrT
+            if(global.USE_LEVEL_WAY)
+            {
+                var Arr2 = [];
+                for(var t = 0; t < Arr.length; t++)
+                {
+                    var Tr = Arr[t];
+                    if(Tr.TreeLevel !== Transfer.TreeLevel)
+                        Arr2.push(Tr)
+                }
+                Arr = Arr2
+            }
             if(global.DoTxLog)
                 ToLog("SEND TRANSFER BlockNum:" + Block.BlockNum + " Arr=" + Arr.length + " to " + NodeName(Item.Node))
             var BufData = this.CreateTransferBuffer(Arr, arrPow, arrSum, Block, Item.Node);
@@ -714,7 +730,7 @@ module.exports = class CConsensus extends require("./block-loader")
             ArrTx = ArrT
         }
         Data = {"Version":5, "BlockNum":Block.BlockNum, "Reserv1":0, "MaxPOW":MaxPOWList, "Reserv2":0, "BaseBlockNum":this.CurrentBlockNum - Block.BlockNum,
-            "MaxSumID":MaxSumID, "BlockList":BlockList, "TicketArray":ArrTt, "TxArray":ArrTx, }
+            "MaxSumID":MaxSumID, "BlockList":BlockList, "TicketArray":ArrTt, "TxArray":ArrTx, "NoSendTx":Node.NoSendTx, }
         var BufWrite = BufLib.GetBufferFromObject(Data, FORMAT_DATA_TRANSFER, MAX_BLOCK_SIZE + 30000, WorkStructSend);
         return BufWrite;
     }

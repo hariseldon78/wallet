@@ -43,9 +43,6 @@ setTimeout(function ()
         {
             //win.showDevTools();
 
-            //var str= "C:/VC++/NodeJS/MyMoney/Source/node_modules/secp256k1/build/Release/secp256k1"
-            // var str= "C:/VC++/NodeJS/MyMoney/!OLD!!!/lib2/secp256k1/win32_x64-nw/secp256k1"
-            // global.secp256k1_2 = require(str);
 
 
             // Create a tray icon
