@@ -85,7 +85,7 @@ global.MAX_BLOCK_SIZE = 130 * 1024;
 global.MAX_TRANSACTION_SIZE = 65535;
 global.MIN_TRANSACTION_SIZE = 32;
 global.MAX_TRANSACTION_COUNT = 2000;
-global.MAX_TRANSACTION_LIMIT = 1000;
+global.MAX_TRANSACTION_LIMIT = 1100;
 global.MIN_POWER_POW_TR = 10;
 if(global.MIN_POWER_POW_BL === undefined)
     global.MIN_POWER_POW_BL = 5;
@@ -154,6 +154,7 @@ else
             global.START_PORT_NUMBER = 40000;
         global.ALL_VIEW_ROWS = 1;
     }
+global.MIN_POWER_POW_TR = 0;
 if(global.LOCAL_RUN)
 {
     global.BLOCKNUM_TICKET_ALGO = 0;
