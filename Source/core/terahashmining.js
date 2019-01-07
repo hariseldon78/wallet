@@ -20,6 +20,7 @@ if(global.LOCAL_RUN || global.TEST_NETWORK)
 require('./library.js');
 require('./crypto-library.js');
 require('../HTML/JS/terahashlib.js');
+var DELTA_NONCE = Math.pow(2, 40) * global.MINING_VERSION_NUM;
 global.CreateHashMinimal = CreateHashMinimal;
 global.CreatePOWVersionX = CreatePOWVersion3;
 
@@ -108,7 +109,7 @@ function CreatePOWVersion3(Block,bHashPump)
     var LastNonce = Block.LastNonce;
     var BlockNum = Block.BlockNum;
     var Miner = Block.MinerID;
-    var StartNonceRnd = Block.LastNonce + Math.trunc(3000000000 * Math.random());
+    var StartNonceRnd = DELTA_NONCE + Block.LastNonce + Math.trunc(3000000000 * Math.random());
     var List = GetNonceHashArr(BlockNum, Miner, StartNonceRnd, RunCount);
     for(var n = 0; n < RunCount; n++)
     {
@@ -193,7 +194,7 @@ function FindHashBuffer3(HashFind,BlockNum,Miner,CountFind)
         var BlockNum2 = BufferBlockNum3[Index];
         if(BlockNum2 && BlockNum2 > BlockNum - DELTA_LONG_MINING)
         {
-            var Nonce2 = BufferNonce3[Index];
+            var Nonce2 = DELTA_NONCE + BufferNonce3[Index];
             var Hash2 = GetHashFromNum3(BlockNum2, Miner, Nonce2);
             return {Hash:Hash2, DeltaNum:BlockNum - BlockNum2, Nonce:Nonce2};
         }

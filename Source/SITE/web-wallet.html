@@ -212,13 +212,13 @@
                 if(!$("idPrivKey").value)
                 {
                     if($("idPubKey").value)
-                        Str="Wallet in read mode. Using Public key";
+                        Str="Wallet in read mode. Using Public key.";
                     else
                         Str="Key not set. Pls, press edit and generate key ->";
                 }
                 else
                 {
-                    Str="The private key is used";
+                    Str="OK. Using Private key.";
                 }
                 $("idPrivKeyButton").innerHTML=Str;
             }

@@ -11,16 +11,17 @@
 
 var DELTA_LONG_MINING = 5e3, BLOCKNUM_ALGO2 = 656e4, BLOCKNUM_HASH_NEW = 10195e3, BLOCKNUM_TICKET_ALGO = 1607e4;
 
-function GetHashFromSeqAddr(r,o,a,e)
+function GetHashFromSeqAddr(r,o,a,e,t)
 {
     if(a < BLOCKNUM_ALGO2)
     {
-        var t = shaarrblock2(r, o, a);
-        return {Hash:t, PowHash:t, Hash1:t, Hash2:t};
+        var n = shaarrblock2(r, o, a);
+        return {Hash:n, PowHash:n, Hash1:n, Hash2:n};
     }
-    var n = ReadUintFromArr(o, 0), i = ReadUintFromArr(o, 6), A = ReadUintFromArr(o, 12), s = ReadUintFromArr(o, 18), l = ReadUint16FromArr(o,
-    24), u = ReadUint16FromArr(o, 26);
-    return GetHash(r, ReadUint32FromArr(e || o, 28), a, n, i, A, s, l, u);
+    var i = ReadUintFromArr(o, 0), A = ReadUintFromArr(o, 6), s = ReadUintFromArr(o, 12), l = ReadUintFromArr(o, 18), u = ReadUint16FromArr(o,
+    24), h = ReadUint16FromArr(o, 26), f = GetHash(r, ReadUint32FromArr(e || o, 28), a, i, A, s, l, u, h);
+    return t && (o[17] === t && o[23] === t || (f.PowHash = [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255])), f;
 };
 
 function GetHash(r,o,a,e,t,n,i,A,s)
@@ -32,10 +33,10 @@ function GetHash(r,o,a,e,t,n,i,A,s)
     H) : shaarr2(m, H)), c;
 };
 
-function CalcHashBlockFromSeqAddr(r,o)
+function CalcHashBlockFromSeqAddr(r,o,a)
 {
-    var a = GetHashFromSeqAddr(r.SeqHash, r.AddrHash, r.BlockNum, o);
-    r.Hash = a.Hash, r.PowHash = a.PowHash;
+    var e = GetHashFromSeqAddr(r.SeqHash, r.AddrHash, r.BlockNum, o, a);
+    r.Hash = e.Hash, r.PowHash = e.PowHash;
 };
 
 function XORArr(r,o)
@@ -252,10 +253,11 @@ function shaarrblock2(r,o,a)
 };
 "object" == typeof global && (global.GetHashFromSeqAddr = GetHashFromSeqAddr, global.CalcHashBlockFromSeqAddr = CalcHashBlockFromSeqAddr,
 global.GetHashFromNum2 = GetHashFromNum2, global.GetHashFromNum3 = GetHashFromNum3, global.GetHashFromArrNum2 = GetHashFromArrNum2,
-global.XORArr = XORArr, global.GetHash = GetHash, (global.LOCAL_RUN || global.TEST_NETWORK) && (BLOCKNUM_HASH_NEW = 1e3, BLOCKNUM_TICKET_ALGO = BLOCKNUM_ALGO2 = 0)),
-"object" == typeof global && (global.ReadUint32FromArr = ReadUint32FromArr, global.ReadUintFromArr = ReadUintFromArr, global.ReadUint16FromArr = ReadUint16FromArr,
-global.WriteUintToArr = WriteUintToArr, global.WriteUint32ToArr = WriteUint32ToArr, global.WriteUint32ToArrOnPos = WriteUint32ToArrOnPos,
-global.WriteUint16ToArrOnPos = WriteUint16ToArrOnPos, global.WriteUintToArrOnPos = WriteUintToArrOnPos, global.WriteArrToArr = WriteArrToArr,
-global.WriteArrToArrOnPos = WriteArrToArrOnPos, global.WriteArrToArrHOnPos = WriteArrToArrHOnPos, global.ConvertBufferToStr = ConvertBufferToStr,
-global.CopyObjValue = CopyObjValue, global.CopyArr = CopyArr, global.ParseNum = ParseNum, global.CompareArr = CompareArr, global.shaarr2 = shaarr2,
-global.sha3arr2 = sha3arr2, global.arr2 = arr2, global.GetBlockArrFromBuffer = GetBlockArrFromBuffer, global.shaarrblock2 = shaarrblock2);
+global.XORArr = XORArr, global.GetHash = GetHash, (global.LOCAL_RUN || global.TEST_NETWORK) && (BLOCKNUM_HASH_NEW = 1e3, BLOCKNUM_TICKET_ALGO = BLOCKNUM_ALGO2 = 0,
+global.TEST_NETWORK && (global.BLOCKNUM_TICKET_ALGO = 1296300))), "object" == typeof global && (global.ReadUint32FromArr = ReadUint32FromArr,
+global.ReadUintFromArr = ReadUintFromArr, global.ReadUint16FromArr = ReadUint16FromArr, global.WriteUintToArr = WriteUintToArr,
+global.WriteUint32ToArr = WriteUint32ToArr, global.WriteUint32ToArrOnPos = WriteUint32ToArrOnPos, global.WriteUint16ToArrOnPos = WriteUint16ToArrOnPos,
+global.WriteUintToArrOnPos = WriteUintToArrOnPos, global.WriteArrToArr = WriteArrToArr, global.WriteArrToArrOnPos = WriteArrToArrOnPos,
+global.WriteArrToArrHOnPos = WriteArrToArrHOnPos, global.ConvertBufferToStr = ConvertBufferToStr, global.CopyObjValue = CopyObjValue,
+global.CopyArr = CopyArr, global.ParseNum = ParseNum, global.CompareArr = CompareArr, global.shaarr2 = shaarr2, global.sha3arr2 = sha3arr2,
+global.arr2 = arr2, global.GetBlockArrFromBuffer = GetBlockArrFromBuffer, global.shaarrblock2 = shaarrblock2);

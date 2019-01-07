@@ -1,4 +1,4 @@
-﻿# TERA Smart money
+﻿# TERA PLATFORM
 
 * [Light client (zip)](https://github.com/terafoundation/wallet/raw/master/Bin/Light/Tera-light.zip)
 
@@ -11,11 +11,11 @@
 * Если вы не указали http пароль, то возможен доступ только с локального адреса: 127.0.0.1:8080
 * Установите удаленный доступ к ноде только из заданного узла через константу HTTP_IP_CONNECT (например: "HTTP_IP_CONNECT":"122.22.33.11, 122.22.33.12")
 
-## Установка на Windows:
-https://github.com/terafoundation/wallet/raw/master/Bin/Win64/tera_setup.exe
+## Установка легкого кошелька на Windows:
+https://github.com/terafoundation/wallet/raw/master/Bin/Light/tera_light_setup.exe
 
 
-## Установка на Windows из исходников по шагам:
+## Установка полной ноды на Windows из исходников по шагам:
 
 1. Скачайте и установите Nodejs https://nodejs.org  (рекомендуется версия v8.11)
 2. Скачайте и установите git https://git-scm.com/download/win

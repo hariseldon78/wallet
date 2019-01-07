@@ -15,11 +15,11 @@ Attention:
 * For remote access to the node only from the specified computer set the HTTP_IP_CONNECT constant (for example: "HTTP_IP_CONNECT": "122.22.33.11")
 
 
-## Installing from setup on Windows:
-https://terafoundation.org/tera_setup.exe
+## Installing light wallet from setup on Windows:
+https://github.com/terafoundation/wallet/raw/master/Bin/Light/tera_light_setup.exe
 
 
-## Installing from source code on Windows by steps:
+## Installing full node from source code on Windows by steps:
 
 1. Download and install Nodejs https://nodejs.org (v8.11 is recommended)
 2. Download and install git https://git-scm.com/download/win

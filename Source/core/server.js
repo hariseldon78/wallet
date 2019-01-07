@@ -104,8 +104,6 @@ module.exports = class CTransport extends require("./connect")
         {
             Map["TRANSFER"] = {Period:700, Hot:1}
             Map["TRANSFERTX"] = {Period:700, Hot:1}
-            Map["GETTRANSFERTX"] = {Period:350, Hot:1}
-            Map["RETTRANSFERTX"] = {Period:0, Hot:1}
             Map["TIME"] = {Period:2000, LowVersion:1, Hard:1, Immediately:1}
             Map["PING"] = {Period:4000, LowVersion:1, Hard:1, Immediately:1}
             Map["PONG"] = {Period:0, LowVersion:1, Immediately:1}
@@ -534,8 +532,6 @@ module.exports = class CTransport extends require("./connect")
         {
             Buf.Context = global.ContextPackets.LoadValue(Buf.ContextID)
         }
-        if(Buf.Method === "RETTRANSFER")
-            var stop = 1;
         if(!Buf.Context)
         {
             if(Param && Param.Period === 0 && Buf.Method !== "RETBLOCKHEADER")
