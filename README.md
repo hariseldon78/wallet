@@ -4,8 +4,6 @@
 https://github.com/terafoundation/wallet/raw/master/Bin/Light/tera_light_setup.exe
 
 * [Light client (zip)](https://github.com/terafoundation/wallet/raw/master/Bin/Light/Tera-light.zip)
-* [Wallet handbook - PDF](https://drive.google.com/file/d/1ej-8jkjKd3p78vdGXWkzzVJq5PTgyxEw/view?usp=sharing)
-* [<Документация на русском>](https://github.com/terafoundation/wallet/tree/master/Doc/Rus)
 
 ## Installing full node from source code by steps:
 
@@ -198,6 +196,7 @@ sudo pm2 start run-test.js
 * [Эта же страница на русском](https://github.com/terafoundation/wallet/tree/master/Doc/Rus)
 * [Torrent of blockchain - DATA/DB folder](https://github.com/terafoundation/wallet/raw/master/Torrent/Tera-folder-DB.torrent)
 * [API](https://github.com/terafoundation/wallet/blob/master/Doc/Eng/API.md)
+* [Wallet handbook - PDF (old)](https://drive.google.com/file/d/1ej-8jkjKd3p78vdGXWkzzVJq5PTgyxEw/view?usp=sharing)
 
 
 
