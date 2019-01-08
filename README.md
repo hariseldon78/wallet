@@ -1,9 +1,13 @@
 ﻿# TERA PLATFORM
 
+## Installing light wallet from setup on Windows:
+https://github.com/terafoundation/wallet/raw/master/Bin/Light/tera_light_setup.exe
+
 * [Light client (zip)](https://github.com/terafoundation/wallet/raw/master/Bin/Light/Tera-light.zip)
 * [Wallet handbook - PDF](https://drive.google.com/file/d/1ej-8jkjKd3p78vdGXWkzzVJq5PTgyxEw/view?usp=sharing)
 * [<Документация на русском>](https://github.com/terafoundation/wallet/tree/master/Doc/Rus)
 
+## Installing full node from source code by steps:
 
 Attention:
 * For a quick initial download of the wallet, there is a [link](https://github.com/terafoundation/wallet/raw/master/Torrent/Tera-folder-DB.torrent) to download the database via the P2P Protocol. Download the file via torrent and unzip it. Next, put the DB folder in the data directory of the wallet (with full replacement).
@@ -13,13 +17,11 @@ Attention:
 * We recommend putting an additional password on the private key ("Set password" button) - in this case the private key will be stored in file in encrypted form.
 * If you do not set http-password, you can access only from the local address: 127.0.0.1:8080
 * For remote access to the node only from the specified computer set the HTTP_IP_CONNECT constant (for example: "HTTP_IP_CONNECT": "122.22.33.11")
+* When installing, pay attention to the secp256k1 cryptographic library. There should be no errors when compiling it (with command: npm install)
 
 
-## Installing light wallet from setup on Windows:
-https://github.com/terafoundation/wallet/raw/master/Bin/Light/tera_light_setup.exe
 
-
-## Installing full node from source code on Windows by steps:
+## Installing on Windows:
 
 1. Download and install Nodejs https://nodejs.org (v8.11 is recommended)
 2. Download and install git https://git-scm.com/download/win
@@ -29,6 +31,7 @@ https://github.com/terafoundation/wallet/raw/master/Bin/Light/tera_light_setup.e
 cd ..\..\..\
 git clone https://github.com/terafoundation/wallet.git
 npm install --global --production windows-build-tools
+npm install -g node-gyp
 cd wallet/Source
 npm install
 node set httpport:8080 password:<secret word (no spaces)>
@@ -66,6 +69,7 @@ git pull
 sudo yum install -y git
 curl --silent --location https://rpm.nodesource.com/setup_8.x | sudo bash -
 sudo yum  install -y nodejs
+sudo yum install gcc gcc-c++
 sudo npm install pm2 -g
 sudo git clone https://github.com/terafoundation/wallet.git
 cd wallet/Source
@@ -99,6 +103,8 @@ sudo apt-get install -y nodejs
 sudo apt-get install -y npm
 sudo npm install pm2 -g
 sudo git clone https://github.com/terafoundation/wallet.git
+sudo apt install build-essential
+sudo apt group install "Development Tools"
 cd wallet/Source
 sudo npm install
 sudo node set httpport:8080 password:<secret word (no spaces)>

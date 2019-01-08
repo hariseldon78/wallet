@@ -1,6 +1,11 @@
 ﻿# TERA PLATFORM
 
+## Установка легкого кошелька на Windows:
+https://github.com/terafoundation/wallet/raw/master/Bin/Light/tera_light_setup.exe
 * [Light client (zip)](https://github.com/terafoundation/wallet/raw/master/Bin/Light/Tera-light.zip)
+
+## Установка полной ноды из исходников по шагам:
+
 
 Внимание:
 * Для быстрой начальной загрузки кошелька выложена [ссылка](https://github.com/terafoundation/wallet/raw/master/Torrent/Tera-folder-DB.torrent) на загрузку базы данных по P2P протоколу. Скачайте через торрент файл и распакуйте его. Далее положите папку DB в каталог DATA кошелька (с полной заменой).
@@ -10,12 +15,11 @@
 * Рекомендуем поставить дополнительный пароль на приватный ключ (кнопка "Set password")  - в этом случае приватный ключ будет храниться в файле кошелька в зашифрованном виде.
 * Если вы не указали http пароль, то возможен доступ только с локального адреса: 127.0.0.1:8080
 * Установите удаленный доступ к ноде только из заданного узла через константу HTTP_IP_CONNECT (например: "HTTP_IP_CONNECT":"122.22.33.11, 122.22.33.12")
-
-## Установка легкого кошелька на Windows:
-https://github.com/terafoundation/wallet/raw/master/Bin/Light/tera_light_setup.exe
+* При установке обратите внимание на криптографическую библиотеку secp256k1. При ее компиляции (командной npm install) не должно быть ошибок.
 
 
-## Установка полной ноды на Windows из исходников по шагам:
+
+## Установка на Windows:
 
 1. Скачайте и установите Nodejs https://nodejs.org  (рекомендуется версия v8.11)
 2. Скачайте и установите git https://git-scm.com/download/win
@@ -23,6 +27,8 @@ https://github.com/terafoundation/wallet/raw/master/Bin/Light/tera_light_setup.e
 ```
 cd ..\..\..\
 git clone https://github.com/terafoundation/wallet.git
+npm install --global --production windows-build-tools
+npm install -g node-gyp
 cd wallet/Source
 npm install
 node set httpport:8080 password:<секретное слово без пробела>
@@ -66,6 +72,7 @@ git pull
 sudo yum install -y git
 curl --silent --location https://rpm.nodesource.com/setup_8.x | sudo bash -
 sudo yum  install -y nodejs
+sudo yum install gcc gcc-c++
 sudo npm install pm2 -g
 sudo git clone https://github.com/terafoundation/wallet.git
 cd wallet/Source
@@ -89,6 +96,8 @@ sudo apt-get install -y nodejs
 sudo apt-get install -y npm
 sudo npm install pm2 -g
 sudo git clone https://github.com/terafoundation/wallet.git
+sudo apt install build-essential
+sudo apt group install "Development Tools"
 cd wallet/Source
 sudo npm install
 sudo node set httpport:8080 password:<секретное слово без пробела>
