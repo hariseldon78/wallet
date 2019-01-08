@@ -197,7 +197,7 @@ sudo pm2 start run-test.js
 * [Torrent of blockchain - DATA/DB folder](https://github.com/terafoundation/wallet/raw/master/Torrent/Tera-folder-DB.torrent)
 * [API](https://github.com/terafoundation/wallet/blob/master/Doc/Eng/API.md)
 * [Wallet handbook - PDF (old)](https://drive.google.com/file/d/1ej-8jkjKd3p78vdGXWkzzVJq5PTgyxEw/view?usp=sharing)
-* [Guide-chinese](https://github.com/terafoundation/wallet/blob/master/Doc/Chinese/Mining.pdf)
+* [Guide-chinese PDF](https://github.com/terafoundation/wallet/raw/master/Doc/Chinese/Mining.pdf)
 
 
 
