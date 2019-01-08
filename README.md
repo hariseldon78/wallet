@@ -1,8 +1,7 @@
 ﻿# TERA PLATFORM
 
 ## Installing light wallet from setup on Windows:
-https://github.com/terafoundation/wallet/raw/master/Bin/Light/tera_light_setup.exe
-
+* https://github.com/terafoundation/wallet/raw/master/Bin/Light/tera_light_setup.exe
 * [Light client (zip)](https://github.com/terafoundation/wallet/raw/master/Bin/Light/Tera-light.zip)
 
 ## Installing full node from source code by steps:

@@ -1,7 +1,7 @@
 ﻿# TERA PLATFORM
 
 ## Установка легкого кошелька на Windows:
-https://github.com/terafoundation/wallet/raw/master/Bin/Light/tera_light_setup.exe
+* https://github.com/terafoundation/wallet/raw/master/Bin/Light/tera_light_setup.exe
 * [Light client (zip)](https://github.com/terafoundation/wallet/raw/master/Bin/Light/Tera-light.zip)
 
 ## Установка полной ноды из исходников по шагам:
