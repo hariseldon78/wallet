@@ -529,7 +529,7 @@ function RetOpenDapps(e,t,r)
     if(t && (n = e.Num + "." + n), 0 < e.HTMLLength)
     {
         var a = RetIconDapp(e) + n;
-        return '<button class="bt_open_dapp" style="margin: -2px 0 0 0" onclick="OpenDapps(' + e.Num + "," + r + ')">' + a + "</button>";
+        return '<button class="bt_open_dapp" style="margin: -1px 0 0 0" onclick="OpenDapps(' + e.Num + "," + r + ')">' + a + "</button>";
     }
     return RetIconDapp(e) + n;
 };
@@ -552,7 +552,7 @@ function RetChangeSmart(e)
     e.SmartObj && (e.SmartObj.HTMLLength ? (t = RetOpenDapps(e.SmartObj, 1, e.Num), n = 1) : t = e.SmartObj.Num + "." + escapeHtml(e.SmartObj.Name) + "<BR>",
     window.DEBUG_WALLET && (r = "<BR>State:" + JSON.stringify(e.SmartState)));
     var a = 20;
-    return n && (a = 40), '<DIV style="width: 220px;">' + t + '<button onclick="ChangeSmart(' + e.Num + "," + e.Value.Smart + ')" class="setsmart" style="height: ' + a + "px;min-height: " + a + 'px;">Set</button>' + r + "</DIV>";
+    return n && (a = 40), '<DIV style="width: 204px;">' + t + '<button onclick="ChangeSmart(' + e.Num + "," + e.Value.Smart + ')" class="setsmart" style="height: ' + a + "px;min-height: " + a + 'px;">Set</button>' + r + "</DIV>";
 };
 
 function RetBaseAccount(e)
