@@ -529,7 +529,7 @@ function RetOpenDapps(e,t,r)
     if(t && (n = e.Num + "." + n), 0 < e.HTMLLength)
     {
         var a = RetIconDapp(e) + n;
-        return '<button class="bt_open_dapp" style="margin: -1px 0 0 0" onclick="OpenDapps(' + e.Num + "," + r + ')">' + a + "</button>";
+        return '<button class="bt_open_dapp" style="margin: -2px 0 0 0" onclick="OpenDapps(' + e.Num + "," + r + ')">' + a + "</button>";
     }
     return RetIconDapp(e) + n;
 };
