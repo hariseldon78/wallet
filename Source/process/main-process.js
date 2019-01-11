@@ -73,7 +73,7 @@ process.on('error', function (err)
 });
 var ArrChildProcess = [];
 var WebProcess = {Name:"WEB PROCESS", idInterval:0, idInterval1:0, idInterval2:0, LastAlive:Date.now(), Worker:undefined, Path:"./process/web-process.js",
-    OnMessage:OnMessageHosting, PeriodAlive:3000};
+    OnMessage:OnMessageWeb, PeriodAlive:3000};
 if(global.HTTP_HOSTING_PORT && !global.NWMODE)
 {
     ArrChildProcess.push(WebProcess);
@@ -112,12 +112,29 @@ if(global.HTTP_HOSTING_PORT && !global.NWMODE)
     }, 5000);
 }
 
-function OnMessageHosting(msg)
+function OnMessageWeb(msg)
 {
-    if(msg.cmd === "SendTransactionHex")
+    switch(msg.cmd)
     {
-        var body = GetArrFromHex(msg.Value);
-        SERVER.AddTransaction({body:body}, 1);
+        case "SendTransactionHex":
+            {
+                var body = GetArrFromHex(msg.Value);
+                if(global.TX_PROCESS && global.TX_PROCESS.Worker)
+                {
+                    var StrHex = GetHexFromArr(shaarr(body));
+                    global.TX_PROCESS.Worker.send({cmd:"FindTX", TX:StrHex});
+                }
+                SERVER.AddTransaction({body:body}, 1);
+                break;
+            }
+        case "SetSmartEvent":
+            {
+                if(global.TX_PROCESS && global.TX_PROCESS.Worker)
+                {
+                    global.TX_PROCESS.Worker.send(msg);
+                }
+                break;
+            }
     }
 };
 global.STATIC_PROCESS = {Name:"STATIC PROCESS", idInterval:0, idInterval1:0, idInterval2:0, LastAlive:Date.now(), Worker:undefined,
@@ -142,15 +159,19 @@ function OnMessageStatic(msg)
 };
 global.EventMap = {};
 global.TX_PROCESS = {Name:"TX PROCESS", idInterval:0, idInterval1:0, idInterval2:0, LastAlive:Date.now(), Worker:undefined,
-    Path:"./process/tx-process.js", OnMessage:OnMessageWriter, PeriodAlive:100 * 1000};
+    Path:"./process/tx-process.js", OnMessage:OnMessageTX, PeriodAlive:100 * 1000};
 ArrChildProcess.push(TX_PROCESS);
 
-function OnMessageWriter(msg)
+function OnMessageTX(msg)
 {
     switch(msg.cmd)
     {
         case "DappEvent":
             {
+                if(WebProcess && WebProcess.Worker)
+                {
+                    WebProcess.Worker.send(msg);
+                }
                 var Data = msg.Data;
                 var Arr = global.EventMap[Data.Smart];
                 if(Arr && Arr.length < 1000)
@@ -239,6 +260,10 @@ function StartChildProcess(Item)
                     else
                         if(msg.cmd === "ToLogClient")
                         {
+                            if(WebProcess && WebProcess.Worker)
+                            {
+                                WebProcess.Worker.send(msg);
+                            }
                             ToLogClient(msg.Str, msg.StrKey, msg.bFinal);
                         }
                         else

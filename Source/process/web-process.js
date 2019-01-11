@@ -34,6 +34,7 @@ setInterval(function ()
     process.send({cmd:"Alive"});
 }, 1000);
 process.send({cmd:"online", message:"OK"});
+global.EventMap = {};
 process.on('message', function (msg)
 {
     LastAlive = Date.now();
@@ -69,6 +70,21 @@ process.on('message', function (msg)
         case "NodeBlockChain":
             NodeBlockChain = msg.Value;
             break;
+        case "DappEvent":
+            {
+                var Data = msg.Data;
+                var LocArr = global.EventMap[Data.Smart];
+                if(LocArr && LocArr.length < 1000)
+                {
+                    LocArr.push(Data);
+                }
+                break;
+            }
+        case "ToLogClient":
+            {
+                ToLogClient0(msg.Str, msg.StrKey, msg.bFinal);
+                break;
+            }
     }
 });
 
@@ -120,14 +136,21 @@ if(global.HTTPS_HOSTING_DOMAIN)
     });
     var redir = require('redirect-https')();
     require('http').createServer(greenlock.middleware(redir)).listen(80);
+    var GetNewSert = 1;
     if(fs.existsSync(file_sert))
     {
         var certs = LoadParams(file_sert, {});
-        var tlsOptions = {key:certs.privkey, cert:certs.cert + '\r\n' + certs.chain};
-        HostingServer = require('https').createServer(tlsOptions, MainHTTPFunction);
-        RunListenServer();
+        var Delta = certs.expiresAt - Date.now();
+        if(Delta > 7 * 86000 * 1000)
+        {
+            ToLog("USE old SERT. ExpiresAt: " + new Date(certs.expiresAt));
+            GetNewSert = 0;
+            var tlsOptions = {key:certs.privkey, cert:certs.cert + '\r\n' + certs.chain};
+            HostingServer = require('https').createServer(tlsOptions, MainHTTPFunction);
+            RunListenServer();
+        }
     }
-    else
+    if(GetNewSert)
     {
         ToLog("Start get new SERT");
         var opts = {domains:[global.HTTPS_HOSTING_DOMAIN], email:'progr76@gmail.com', agreeTos:true, communityMember:true, };
@@ -170,7 +193,8 @@ function MainHTTPFunction(request,response)
         request.addListener("end", function ()
         {
             var Data;
-            if(postData && postData.length && postData.substring(0, 1) === "{")
+            var type = postData.substring(0, 1);
+            if(postData && postData.length && (type === "{" || type === '"'))
             {
                 try
                 {
@@ -227,10 +251,18 @@ WalletFileMap["terahashlib.js"] = 1;
 WalletFileMap["wallet-web.js"] = 1;
 WalletFileMap["wallet-lib.js"] = 1;
 WalletFileMap["crypto-client.js"] = 1;
+WalletFileMap["dapp-inner.js"] = 1;
+WalletFileMap["marked.js"] = 1;
+WalletFileMap["highlight.js"] = 1;
+WalletFileMap["highlight-js.js"] = 1;
+WalletFileMap["highlight-html.js"] = 1;
+WalletFileMap["codes.css"] = 1;
+WalletFileMap["sign-lib-min.js"] = 1;
 WalletFileMap["buttons.css"] = 1;
 WalletFileMap["style.css"] = 1;
 WalletFileMap["wallet.css"] = 1;
 WalletFileMap["blockviewer.html"] = 1;
+WalletFileMap["web-wallet.html"] = 1;
 global.HostingCaller = {};
 
 function DoCommandNew(response,Type,Path,Params)
@@ -258,6 +290,8 @@ function DoCommandNew(response,Type,Path,Params)
         return ;
     }
     Method = Method.toLowerCase();
+    if(Method === "dapp" && ArrPath.length === 2)
+        Method = "DappTemplateFile";
     switch(Method)
     {
         case "":
@@ -266,7 +300,7 @@ function DoCommandNew(response,Type,Path,Params)
         case "file":
             SendBlockFile(response, ArrPath[1], ArrPath[2]);
             break;
-        case "dapp":
+        case "DappTemplateFile":
             DappTemplateFile(response, ArrPath[1]);
             break;
         case "smart":
@@ -283,10 +317,18 @@ function DoCommandNew(response,Type,Path,Params)
                 if(Name.indexOf(".") < 0)
                     Name += ".html";
                 var PrefixPath;
-                if(WalletFileMap[Name])
-                    PrefixPath = "./HTML";
+                if(Method === "files")
+                {
+                    PrefixPath = "../FILES";
+                    Name = PrefixPath + "/" + Name;
+                    SendWebFile(response, Name, Path);
+                    return ;
+                }
                 else
-                    PrefixPath = "./SITE";
+                    if(WalletFileMap[Name])
+                        PrefixPath = "./HTML";
+                    else
+                        PrefixPath = "./SITE";
                 var type = Path.substr(Path.length - 3, 3);
                 switch(type)
                 {
@@ -322,32 +364,27 @@ function DoCommandNew(response,Type,Path,Params)
             }
     }
 };
-
-function SendBlockFile(response,BlockNum,TrNum)
+HostingCaller.GetCurrentInfo = function (Params)
 {
-    BlockNum = parseInt(BlockNum);
-    TrNum = parseInt(TrNum);
-    if(BlockNum && TrNum <= MAX_TRANSACTION_COUNT)
+    var Ret = {result:1, VersionNum:global.UPDATE_CODE_VERSION_NUM, MaxNumBlockDB:SERVER.GetMaxNumBlockDB(), CurBlockNum:GetCurrentBlockNumByTime(),
+        MaxAccID:DApps.Accounts.GetMaxAccount(), MaxDappsID:DApps.Smart.GetMaxNum(), NETWORK:global.NETWORK, CurTime:Date.now(), DELTA_CURRENT_TIME:DELTA_CURRENT_TIME,
+        MIN_POWER_POW_TR:MIN_POWER_POW_TR, FIRST_TIME_BLOCK:FIRST_TIME_BLOCK, CONSENSUS_PERIOD_TIME:CONSENSUS_PERIOD_TIME, MIN_POWER_POW_ACC_CREATE:MIN_POWER_POW_ACC_CREATE,
+    };
+    if(typeof Params === "object" && Params.Diagram == true)
     {
-        var Block = SERVER.ReadBlockDB(BlockNum);
-        if(Block && Block.arrContent)
-        {
-            var Body = Block.arrContent[TrNum];
-            if(Body && Body[0] === global.TYPE_TRANSACTION_FILE)
-            {
-                var TR = DApps.File.GetObjectTransaction(Body);
-                response.writeHead(200, {'Content-Type':TR.ContentType});
-                response.end(TR.Data);
-            }
-        }
+        var arrNames = ["MAX:ALL_NODES", "MAX:HASH_RATE_G"];
+        Ret.arr = GET_STATDIAGRAMS(arrNames);
     }
-    response.writeHead(404, {'Content-Type':'text/html'});
-    response.end();
+    if(typeof Params === "object" && Params.BlockChain == true)
+    {
+        Ret.BlockChain = NodeBlockChain;
+    }
+    return Ret;
 };
 var MaxCountViewRows = 20;
 HostingCaller.GetAccountList = function (Params)
 {
-    if(!Params)
+    if(typeof Params !== "object")
         return {result:0};
     if(Params.CountNum > MaxCountViewRows)
         Params.CountNum = MaxCountViewRows;
@@ -356,9 +393,15 @@ HostingCaller.GetAccountList = function (Params)
     var arr = DApps.Accounts.GetRowsAccounts(ParseNum(Params.StartNum), ParseNum(Params.CountNum));
     return {result:1, arr:arr};
 };
+HostingCaller.GetAccount = function (id)
+{
+    id = ParseNum(id);
+    var arr = DApps.Accounts.GetRowsAccounts(id, 1);
+    return {Item:arr[0], result:1};
+};
 HostingCaller.GetBlockList = function (Params)
 {
-    if(!Params)
+    if(typeof Params !== "object")
         return {result:0};
     if(Params.CountNum > MaxCountViewRows)
         Params.CountNum = MaxCountViewRows;
@@ -373,7 +416,7 @@ HostingCaller.GetTransactionList = function (Params)
 };
 HostingCaller.GetTransactionAll = function (Params)
 {
-    if(!Params)
+    if(typeof Params !== "object")
         return {result:0};
     if(Params.CountNum > MaxCountViewRows)
         Params.CountNum = MaxCountViewRows;
@@ -386,7 +429,7 @@ HostingCaller.GetTransactionAll = function (Params)
 };
 HostingCaller.GetDappList = function (Params)
 {
-    if(!Params)
+    if(typeof Params !== "object")
         return {result:0};
     if(Params.CountNum > MaxCountViewRows)
         Params.CountNum = MaxCountViewRows;
@@ -395,28 +438,11 @@ HostingCaller.GetDappList = function (Params)
     var arr = DApps.Smart.GetRows(ParseNum(Params.StartNum), ParseNum(Params.CountNum));
     return {result:1, arr:arr};
 };
-HostingCaller.GetCurrentInfo = function (Params)
-{
-    var Ret = {result:1, VersionNum:global.UPDATE_CODE_VERSION_NUM, MaxNumBlockDB:SERVER.GetMaxNumBlockDB(), CurBlockNum:GetCurrentBlockNumByTime(),
-        MaxAccID:DApps.Accounts.GetMaxAccount(), MaxDappsID:DApps.Smart.GetMaxNum(), NETWORK:global.NETWORK, CurTime:Date.now(), DELTA_CURRENT_TIME:DELTA_CURRENT_TIME,
-        MIN_POWER_POW_TR:MIN_POWER_POW_TR, FIRST_TIME_BLOCK:FIRST_TIME_BLOCK, CONSENSUS_PERIOD_TIME:CONSENSUS_PERIOD_TIME, MIN_POWER_POW_ACC_CREATE:MIN_POWER_POW_ACC_CREATE,
-    };
-    if(Params && Params.Diagram == true)
-    {
-        var arrNames = ["MAX:ALL_NODES", "MAX:HASH_RATE_G"];
-        Ret.arr = GET_STATDIAGRAMS(arrNames);
-    }
-    if(Params && Params.BlockChain == true)
-    {
-        Ret.BlockChain = NodeBlockChain;
-    }
-    return Ret;
-};
 HostingCaller.GetNodeList = function (Params)
 {
     var arr = [];
     var List;
-    if(Params && Params.All)
+    if(typeof Params === "object" && Params.All)
         List = AllNodeList;
     else
         List = HostNodeList;
@@ -447,7 +473,7 @@ HostingCaller.GetNodeList = function (Params)
             Item = List[i];
         }
         var Value = {ip:Item.ip, port:Item.portweb, };
-        if(Params && Params.Geo)
+        if(typeof Params === "object" && Params.Geo)
         {
             if(!Item.Geo)
                 SetGeoLocation(Item);
@@ -463,8 +489,8 @@ var AccountKeyMap = {};
 var LastMaxNum = 0;
 HostingCaller.GetAccountListByKey = function (Params)
 {
-    if(!Params)
-        return {result:0};
+    if(typeof Params !== "object" || !Params.Key)
+        return {result:0, arr:[]};
     var Accounts = DApps.Accounts;
     for(var num = LastMaxNum; true; num++)
     {
@@ -512,10 +538,142 @@ HostingCaller.GetAccountListByKey = function (Params)
 };
 HostingCaller.SendTransactionHex = function (Params)
 {
-    if(!Params || !Params.Hex)
+    if(typeof Params !== "object" || !Params.Hex)
         return {result:0};
     process.send({cmd:"SendTransactionHex", Value:Params.Hex});
     return {result:1, text:"OK"};
+};
+HostingCaller.DappSmartHTMLFile = function (Params)
+{
+    if(typeof Params !== "object")
+        return {result:0};
+    return HTTPCaller.DappSmartHTMLFile(Params);
+};
+HostingCaller.DappBlockFile = function (Params)
+{
+    if(typeof Params !== "object")
+        return {result:0};
+    return HTTPCaller.DappBlockFile(Params);
+};
+HostingCaller.LoopEvent = function (Params)
+{
+    if(typeof Params !== "object")
+        return {result:0};
+    process.send({cmd:"SetSmartEvent", Smart:ParseNum(Params.Smart)});
+    var Arr = global.EventMap[ParseNum(Params.Smart)];
+    global.EventMap[ParseNum(Params.Smart)] = [];
+    if(!Arr || Arr.length === 0)
+    {
+        return {result:0, arr:[]};
+    }
+    return {arr:Arr, result:1};
+};
+HTTPCaller.LoopEvent = HostingCaller.LoopEvent;
+HostingCaller.DappInfo = function (Params)
+{
+    if(typeof Params !== "object")
+        return {result:0};
+    var Context = GetUserContext(Params);
+    var Ret = HTTPCaller.DappInfo(Params, undefined, 1);
+    Ret.PubKey = undefined;
+    var StrInfo = JSON.stringify(Ret);
+    if(!Params.AllData && Context.PrevDappInfo === StrInfo && Context.NumDappInfo === Context.NumDappInfo)
+    {
+        return {result:0, usebufer:1};
+    }
+    Context.PrevDappInfo = StrInfo;
+    Context.NumDappInfo++;
+    Context.LastTime = Date.now();
+    Ret.NumDappInfo = Context.NumDappInfo;
+    Ret.CurTime = Date.now();
+    Ret.CurBlockNum = GetCurrentBlockNumByTime();
+    Ret.BlockNumDB = SERVER.BlockNumDB;
+    Ret.MaxAccID = DApps.Accounts.GetMaxAccount();
+    Ret.MaxDappsID = DApps.Smart.GetMaxNum();
+    return Ret;
+};
+HostingCaller.DappWalletList = function (Params)
+{
+    if(typeof Params !== "object")
+        return {result:0};
+    var Ret = HostingCaller.GetAccountListByKey(Params);
+    var Smart = ParseNum(Params.Smart);
+    var arr = [];
+    for(var i = 0; i < Ret.arr.length; i++)
+    {
+        if(Ret.arr[i].Value.Smart === Smart)
+        {
+            arr.push(Ret.arr[i]);
+        }
+    }
+    Ret.arr = arr;
+    return Ret;
+};
+HTTPCaller.DappWalletList = HostingCaller.DappWalletList;
+HostingCaller.DappAccountList = function (Params)
+{
+    if(typeof Params !== "object")
+        return {result:0};
+    if(Params.CountNum > MaxCountViewRows)
+        Params.CountNum = MaxCountViewRows;
+    if(!Params.CountNum)
+        Params.CountNum = 1;
+    var arr = DApps.Accounts.GetRowsAccounts(ParseNum(Params.StartNum), ParseNum(Params.CountNum), undefined, 1);
+    return {arr:arr, result:1};
+};
+HostingCaller.DappSmartList = function (Params)
+{
+    if(typeof Params !== "object")
+        return {result:0};
+    if(Params.CountNum > MaxCountViewRows)
+        Params.CountNum = MaxCountViewRows;
+    if(!Params.CountNum)
+        Params.CountNum = 1;
+    var arr = DApps.Smart.GetRows(ParseNum(Params.StartNum), ParseNum(Params.CountNum), undefined, undefined, Params.GetAllData,
+    Params.TokenGenerate);
+    return {arr:arr, result:1};
+};
+HostingCaller.DappBlockList = function (Params)
+{
+    if(typeof Params !== "object")
+        return {result:0};
+    if(Params.CountNum > MaxCountViewRows)
+        Params.CountNum = MaxCountViewRows;
+    if(!Params.CountNum)
+        Params.CountNum = 1;
+    var arr = SERVER.GetRows(ParseNum(Params.StartNum), ParseNum(Params.CountNum));
+    return {arr:arr, result:1};
+};
+HostingCaller.DappTransactionList = function (Params)
+{
+    if(typeof Params !== "object")
+        return {result:0};
+    if(Params.CountNum > MaxCountViewRows)
+        Params.CountNum = MaxCountViewRows;
+    if(!Params.CountNum)
+        Params.CountNum = 1;
+    var arr = SERVER.GetTrRows(ParseNum(Params.BlockNum), ParseNum(Params.StartNum), ParseNum(Params.CountNum));
+    return {arr:arr, result:1};
+};
+HostingCaller.DappStaticCall = function (Params)
+{
+    if(typeof Params !== "object")
+        return {result:0};
+    return HTTPCaller.DappStaticCall(Params);
+};
+var WebWalletUser = {};
+
+function GetUserContext(Params)
+{
+    if(typeof Params.Key !== "string")
+        Params.Key = "" + Params.Key;
+    var Context = WebWalletUser[Params.Key];
+    if(!Context)
+    {
+        Context = {NumDappInfo:0, PrevDappInfo:"", LastTime:0};
+        WebWalletUser[Params.Key] = Context;
+    }
+    return Context;
 };
 setInterval(function ()
 {

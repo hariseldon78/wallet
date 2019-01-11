@@ -502,10 +502,13 @@ button.radius
     min-width: 160px;
     max-width: 160px;
     height: 40px;
+    min-height: 40px;
     vertical-align:middle;
+    margin: 0;
 }
 
 .setsmart
 {
     color:saddlebrown;
+    margin: 0;
 }

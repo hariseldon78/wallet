@@ -320,7 +320,7 @@ window.nw ? (window.Open = function (e,t,r,n)
     if(null === t)
         throw "ERROR GET-TYPE";
     n = JSON.stringify(t), a.open("POST", e, !0);
-    var o = (new Error).stack;
+    var o = "" + (new Error).stack;
     a.setRequestHeader("Content-Type", "application/x-www-form-urlencoded"), a.onreadystatechange = function ()
     {
         if(4 == a.readyState)
@@ -460,32 +460,32 @@ function SetGridData(e,t,r,n,a)
     glWorkNum++;
     for(var u = {SumCOIN:0, SumCENT:0}, l = o.rows[0].cells, c = l.length, s = 0; e && s < e.length; s++)
     {
-        var m = e[s], g = m.Num;
-        if(o.MaxNum = m.Num, !(S = i[g]))
+        var g = e[s], m = g.Num;
+        if(o.MaxNum = g.Num, !(y = i[m]))
         {
-            o.RowCount++, S = a ? o.insertRow(1) : o.insertRow( - 1), i[g] = S;
-            for(var f = 0; f < c; f++)
+            o.RowCount++, y = a ? o.insertRow(1) : o.insertRow( - 1), i[m] = y;
+            for(var p = 0; p < c; p++)
             {
-                if("" != (v = l[f]).innerText)
-                    v.F = CreateEval(v.id, "Item"), "(" === v.id.substr(0, 1) && (v.H = 1), (p = S.insertCell(f)).className = v.className;
+                if("" != (v = l[p]).innerText)
+                    v.F = CreateEval(v.id, "Item"), "(" === v.id.substr(0, 1) && (v.H = 1), (f = y.insertCell(p)).className = v.className;
             }
         }
-        S.Work = glWorkNum, CUR_ROW = S;
-        for(f = 0; f < c; f++)
+        y.Work = glWorkNum, CUR_ROW = y;
+        for(p = 0; p < c; p++)
         {
-            var p, v, d;
-            if(p = S.cells[f])
-                if((v = l[f]).H)
-                    (d = "" + v.F(m)).trim(), p.innerHTML !== d && (p.innerHTML = d);
+            var f, v, d;
+            if(f = y.cells[p])
+                if((v = l[p]).H)
+                    (d = "" + v.F(g)).trim(), f.innerHTML !== d && (f.innerHTML = d);
                 else
-                    (d = "" + v.F(m)).trim(), p.innerText !== d && (p.innerText = d);
+                    (d = "" + v.F(g)).trim(), f.innerText !== d && (f.innerText = d);
         }
-        r && 0 === m.Currency && ADD(u, m.Value);
+        r && 0 === g.Currency && ADD(u, g.Value);
     }
-    for(var y in i)
+    for(var S in i)
     {
-        var S;
-        (S = i[y]).Work !== glWorkNum && (o.deleteRow(S.rowIndex), delete i[y]);
+        var y;
+        (y = i[S]).Work !== glWorkNum && (o.deleteRow(y.rowIndex), delete i[S]);
     }
     r && (document.getElementById(r).innerText = "Total: " + SUM_TO_STRING(u, 0));
     DoStableScroll();
@@ -513,16 +513,25 @@ function RetNumDapp(e)
     return e.Num;
 };
 
+function RetIconDapp(e)
+{
+    if(e.IconBlockNum)
+    {
+        var t = "";
+        return MainServer && (t = GetProtocolServerPath(MainServer)), '<img src="' + t + "/file/" + e.IconBlockNum + "/" + e.IconTrNum + '" style="vertical-align:middle; max-width: 32px;"> ';
+    }
+    return "";
+};
+
 function RetOpenDapps(e,t,r)
 {
     var n = escapeHtml(e.Name);
     if(t && (n = e.Num + "." + n), 0 < e.HTMLLength)
     {
-        var a = n;
-        return e.IconBlockNum && (a = '<img src="/file/' + e.IconBlockNum + "/" + e.IconTrNum + '" style="vertical-align:middle; max-width: 32px;"> ' + n),
-        '<button class="bt_open_dapp" style="margin: -2px 0 0 0" onclick="OpenDapps(' + e.Num + "," + r + ')">' + a + "</button>";
+        var a = RetIconDapp(e) + n;
+        return '<button class="bt_open_dapp" style="margin: -2px 0 0 0" onclick="OpenDapps(' + e.Num + "," + r + ')">' + a + "</button>";
     }
-    return e.IconBlockNum ? '<img src="/file/' + e.IconBlockNum + "/" + e.IconTrNum + '" style="vertical-align:middle; max-width: 32px;"> ' + n : n;
+    return RetIconDapp(e) + n;
 };
 
 function RetDirect(e)
@@ -543,7 +552,7 @@ function RetChangeSmart(e)
     e.SmartObj && (e.SmartObj.HTMLLength ? (t = RetOpenDapps(e.SmartObj, 1, e.Num), n = 1) : t = e.SmartObj.Num + "." + escapeHtml(e.SmartObj.Name) + "<BR>",
     window.DEBUG_WALLET && (r = "<BR>State:" + JSON.stringify(e.SmartState)));
     var a = 20;
-    return n && (a = 40), '<DIV style="width: 200px;">' + t + '<button onclick="ChangeSmart(' + e.Num + "," + e.Value.Smart + ')" class="setsmart" style="height: ' + a + 'px;">Set</button>' + r + "</DIV>";
+    return n && (a = 40), '<DIV style="width: 220px;">' + t + '<button onclick="ChangeSmart(' + e.Num + "," + e.Value.Smart + ')" class="setsmart" style="height: ' + a + "px;min-height: " + a + 'px;">Set</button>' + r + "</DIV>";
 };
 
 function RetBaseAccount(e)
@@ -704,7 +713,8 @@ function AddToInvoiceList(e)
 
 function OpenDapps(e,t)
 {
-    t ? window.Open("/dapp/" + e + "#" + t, "dapp", 1200) : window.Open("/dapp/" + e, "dapp", 1200);
+    var r = "/dapp/" + e;
+    "file:" === window.location.protocol && (r = "./dapp-frame.html?dapp=" + e), t && (r += "#" + t), window.Open(r, "dapp", 1200);
 };
 
 function ParseFileName(e)
@@ -780,7 +790,7 @@ function SendCallMethod(e,t,r,n,a)
 
 function SendTrArrayWithSign(r,e,n)
 {
-    if(MainServer)
+    if(MainServer || CanClientSign())
     {
         var t = GetArrFromHex(GetSignFromArr(r));
         WriteArr(r, t, 64), r.length += 12, SendTransaction(r, n);
@@ -861,7 +871,7 @@ function GetSignTransaction(a,o)
 
 function GetSignFromArr(e)
 {
-    var t = $("idPrivKey").value.trim();
+    var t = localStorage.idPrivKey;
     if(!IsHexStr(t) || 64 !== t.length)
         return "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
     var r = GetArrFromHex(t), n = shaarr(e);
@@ -876,6 +886,12 @@ function IsHexStr(e)
 function RetJSON(e)
 {
     return JSON.stringify(e);
+};
+
+function CanClientSign()
+{
+    var e = localStorage.idPrivKey;
+    return IsHexStr(e) && 64 === e.length ? 1 : 0;
 };
 Number.prototype.toStringF = function ()
 {

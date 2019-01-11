@@ -5,18 +5,23 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-Frame-Options" value="sameorigin">
-    <title>DAPP #template-name#</title>
-    <link rel="shortcut icon" href="/HTML/PIC/dapp.png" type="image/png">
-    <script type="text/javascript" src="/HTML/JS/crypto-client.js"></script>
-    <script type="text/javascript" src="/HTML/JS/coinlib.js"></script>
-    <script type="text/javascript" src="../HTML/JS/client.js"></script>
-    <script type="text/javascript" src="/HTML/JS/sha3.js"></script>
-    <script type="text/javascript" src="/HTML/JS/terahashlib.js"></script>
+    <!--<title>DAPP #template-name#</title>-->
+    <!--<link rel="shortcut icon" href="#template-icon#" type="image/vnd.microsoft.icon">-->
+    <title>DAPP Loading...</title>
+    <link rel="shortcut icon" href="./tera.ico" type="image/vnd.microsoft.icon">
+
+    <script type="text/javascript" src="./JS/crypto-client.js"></script>
+    <script type="text/javascript" src="./JS/coinlib.js"></script>
+    <script type="text/javascript" src="./JS/client.js"></script>
+    <script type="text/javascript" src="./JS/terahashlib.js"></script>
+
 
     <script>
         var DapNumber="#template-number#";
         var glSmart=parseInt(DapNumber);
         var CONFIG_DATA={};
+        var NumDappGet=0;
+        var NumDappInfo=0;
 
 
         //DAPP TRANSFER
@@ -84,7 +89,7 @@
                     if(!Data.Account)
                         Data.Account=BASE_ACCOUNT.Num;
 
-                    GetData("DappCall",{Account:Data.Account,MethodName:Data.MethodName,Params:Data.Params}, function (SetData)
+                    GetData("DappStaticCall",{Account:Data.Account,MethodName:Data.MethodName,Params:Data.Params}, function (SetData)
                     {
                         if(SetData)
                         {
@@ -114,23 +119,51 @@
                 case "DappInfo":
                 {
 
-                    GetData("DappInfo",{Smart:glSmart}, function (SetData)
+                    //called every 1 sec from dapp-inner.js
+
+                    var AllData=0;
+                    if(!NumDappGet || NumDappGet%60===0)
+                        AllData=1;
+                    NumDappGet++;
+
+                    var Key=localStorage["idPubKey"];
+                    GetData("DappInfo",{Smart:glSmart,Key:Key,NumDappInfo:NumDappInfo,AllData:AllData}, function (SetData)
                     {
                         if(SetData)
                         {
-                            CONFIG_DATA=SetData;
-
                             Data.Err=!SetData.result;
-                            for(var key in SetData)
-                                Data[key]=SetData[key];
-                            Data.OPEN_PATH=OPEN_PATH;
+                            Data.usebufer=SetData.usebufer;
+                            if(SetData.result)
+                            {
+                                CONFIG_DATA=SetData;
+                                SMART=SetData.Smart;
+                                BASE_ACCOUNT=SetData.Account;
+                                SetBlockChainConstant(SetData);
+                                NumDappInfo=SetData.NumDappInfo;
+                                SetArrLog(SetData.ArrLog);
+
+
+                                for(var key in SetData)
+                                    Data[key]=SetData[key];
+                                Data.OPEN_PATH=OPEN_PATH;
+
+                                if(!Data.PubKey)
+                                {
+                                    //support web/light wallet mode:
+                                    Data.PubKey=localStorage["idPubKey"];
+                                    Data.WalletIsOpen=IsPrivateMode(localStorage["idPrivKey"]);
+                                    Data.WalletCanSign=Data.WalletIsOpen;
+                                }
+                            }
+
                             SendMessage(Data);
                         }
                     });
                     break;
                 }
                 case "DappWalletList":
-                    Data.Params={Smart:glSmart};
+                    var Key=localStorage["idPubKey"];
+                    Data.Params={Smart:glSmart,Key:Key};
                 case "DappSmartHTMLFile":
                 case "DappBlockFile":
                 case "DappAccountList":
@@ -185,21 +218,30 @@
         var SMART={},BASE_ACCOUNT={},OPEN_PATH="";
         window.onload=function()
         {
-            var i=document.URL.indexOf("#");
-            if(i>0)
+            if(window.location.hash)
+                OPEN_PATH=window.location.hash.substr(1);
+            if(window.location.protocol==="file:")
             {
-                OPEN_PATH=document.URL.substr(i+1);
+                DapNumber=window.location.search.substr(6);
+                if(localStorage["MainServer"])
+                {
+                    MainServer=JSON.parse(localStorage["MainServer"]);
+                }
             }
+            glSmart=parseInt(DapNumber);
 
-            GetData("DappInfo",{Smart:glSmart}, function (SetData)
+
+            var Key=localStorage["idPubKey"];
+            GetData("DappInfo",{Smart:glSmart, Key:Key, AllData:1}, function (SetData)
             {
-                if(!SetData || SetData.Err)
+                if(!SetData || !SetData.result)
                     return;
 
                 CONFIG_DATA=SetData;
                 SMART=SetData.Smart;
                 BASE_ACCOUNT=SetData.Account;
                 SetBlockChainConstant(SetData);
+                document.title=SMART.Name;
 
 
                 if(!glDebugPath && BASE_ACCOUNT.SmartState.HTMLBlock)
@@ -225,7 +267,13 @@
 
 
             });
+
+            if(!window.sha3)
+                LoadLib("./JS/sha3.js");
+
+            LoadSignLib();
         }
+
         function CreateFrame(SetData)
         {
             var iframe = document.createElement('iframe');
@@ -234,11 +282,10 @@
             SetData.Body='\
                     <meta charset="UTF-8">\
                     <meta http-equiv="X-Frame-Options" value="sameorigin">\
-                    <script type="text/javascript" src="/HTML/JS/crypto-client.js"><\/script>\
-                    <script type="text/javascript" src="/HTML/JS/coinlib.js"><\/script>\
-                    <script type="text/javascript" src="/HTML/JS/client.js"><\/script>\
-                    <script type="text/javascript" src="/HTML/JS/sha3.js"><\/script>\
-                    <script type="text/javascript" src="/HTML/JS/dapp-inner.js"><\/script>\
+                    <script type="text/javascript" src="./JS/crypto-client.js"><\/script>\
+                    <script type="text/javascript" src="./JS/coinlib.js"><\/script>\
+                    <script type="text/javascript" src="./JS/client.js"><\/script>\
+                    <script type="text/javascript" src="./JS/dapp-inner.js"><\/script>\
                     '+SetData.Body;
 
             iframe.srcdoc=SetData.Body;
@@ -246,41 +293,6 @@
 
         }
 
-        function LoopEvent()
-        {
-            GetData("LoopEvent",{Smart:glSmart}, function (SetData)
-            {
-                if(SetData && SetData.result)
-                {
-                    var Arr=SetData.arr;
-                    for(var i=0;i<Arr.length;i++)
-                    {
-                        var Data=Arr[i];
-                        Data.cmd="OnEvent";
-                        //console.log(JSON.stringify(Data));
-                        SendMessage(Data);
-                    }
-                }
-            });
-        }
-
-        function LoopInfo()
-        {
-            GetData("DappInfo",{Smart:glSmart}, function (SetData)
-            {
-                if(SetData && SetData.result)
-                {
-                    CONFIG_DATA=SetData;
-                    SMART=SetData.Smart;
-                    BASE_ACCOUNT=SetData.Account;
-                    SetBlockChainConstant(SetData);
-
-                    SetArrLog(SetData.ArrLog);
-                }
-            });
-        }
-        setInterval(LoopEvent,1000);
-        setInterval(LoopInfo,1000);
 
 
 
@@ -289,18 +301,14 @@
         {
             if(WasCheckInstall)
                 return;
-            WasCheckInstall=1;
             setInterval(function ()
             {
-                GetData("DappWalletList",{Smart:glSmart}, function (SetData)
+                if(CONFIG_DATA && CONFIG_DATA.ArrWallet && CONFIG_DATA.ArrWallet.length===0)
                 {
-                    if(SetData && SetData.result)
-                    {
-                        //$("idInstall").innerHTML='For install this application press:<button onclick="InstallApp()">Install</button>';
-                        if(SetData.arr.length===0)
-                            SetStatus('<DIV style="background-color: peachpuff;">For install this application goto CONFIG tab, select your account, press "Set" and enter smart number: <B>'+SMART.Num+'</B><DIV>');
-                    }
-                });
+                    WasCheckInstall=1;
+                    SetStatus('<DIV style="background-color: peachpuff;">For install this application goto CONFIG tab, select your account, press "Set" and enter smart number: <B>'+SMART.Num+'</B><DIV>');
+                }
+
             },2000);
         }
 
@@ -330,6 +338,13 @@
                 }
             }
          }
+        function IsPrivateMode(PrivKeyStr)
+        {
+            if(PrivKeyStr  && PrivKeyStr.length===64)
+                return 1;
+            else
+                return 0;
+        }
 
 
         function SetStatus(Str)

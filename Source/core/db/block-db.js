@@ -520,6 +520,11 @@ module.exports = class CDB extends require("../code")
     }
     GetRows(start, count, Filter)
     {
+        if(Filter)
+        {
+            Filter = Filter.trim()
+            Filter = Filter.toUpperCase()
+        }
         var MaxAccount = DApps.Accounts.GetMaxAccount();
         var WasError = 0;
         var arr = [];

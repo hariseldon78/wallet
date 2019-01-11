@@ -298,7 +298,10 @@ class CApp
     GetHistory(start, count, Filter, Direct00)
     {
         if(Filter)
+        {
+            Filter = Filter.trim()
             Filter = Filter.toUpperCase()
+        }
         var arr = [];
         for(var num = start; true; num++)
         {

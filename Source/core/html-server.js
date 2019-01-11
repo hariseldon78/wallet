@@ -66,19 +66,21 @@ function DoCommand(response,Type,Path,params,remoteAddress)
     }
     var method = params[0];
     method = method.toLowerCase();
+    if(method === "dapp" && params.length === 2)
+        method = "DappTemplateFile";
     switch(method)
     {
         case "":
             SendWebFile(response, "./HTML/wallet.html");
             break;
-        case "dapp":
+        case "file":
+            SendBlockFile(response, params[1], params[2]);
+            break;
+        case "DappTemplateFile":
             DappTemplateFile(response, params[1]);
             break;
         case "smart":
             DappSmartCodeFile(response, params[1]);
-            break;
-        case "file":
-            SendBlockFile(response, params[1], params[2]);
             break;
         default:
             {
@@ -140,7 +142,8 @@ function DappTemplateFile(response,StrNum)
             response.writeHead(200, {'Content-Type':'text/html', "X-Frame-Options":"sameorigin"});
             var Str = fs.readFileSync("HTML/dapp-frame.html", {encoding:"utf8"});
             Str = Str.replace(/#template-number#/g, StrNum);
-            Str = Str.replace(/#template-name#/g, Data.Name);
+            Str = Str.replace(/DAPP Loading.../g, Data.Name);
+            Str = Str.replace(/.\/tera.ico/g, "/file/" + Data.IconBlockNum + "/" + Data.IconTrNum);
             response.end(Str);
             return ;
         }
@@ -168,10 +171,10 @@ function DappSmartCodeFile(response,StrNum)
 };
 HTTPCaller.DappSmartHTMLFile = function (Params)
 {
-    var Data = DApps.Smart.ReadSmart(Params.Smart);
+    var Data = DApps.Smart.ReadSmart(ParseNum(Params.Smart));
     if(Data)
     {
-        if(Params.DebugPath)
+        if(global.DEV_MODE && Params.DebugPath)
         {
             ToLog("Load: " + Params.DebugPath);
             Data.HTML = fs.readFileSync(Params.DebugPath, {encoding:"utf8"});
@@ -180,6 +183,7 @@ HTTPCaller.DappSmartHTMLFile = function (Params)
     }
     return {result:0};
 };
+global.SendBlockFile = SendBlockFile;
 
 function SendBlockFile(response,BlockNum,TrNum)
 {
@@ -211,16 +215,16 @@ function SendBlockFile(response,BlockNum,TrNum)
 };
 HTTPCaller.DappBlockFile = function (Params)
 {
-    Params.BlockNum = parseInt(Params.BlockNum);
-    Params.TrNum = parseInt(Params.TrNum);
+    Params.BlockNum = ParseNum(Params.BlockNum);
+    Params.TrNum = ParseNum(Params.TrNum);
     if(!Params.TrNum)
         Params.TrNum = 0;
     if(Params.BlockNum && Params.TrNum <= MAX_TRANSACTION_COUNT)
     {
-        var Block = SERVER.ReadBlockDB(Params.BlockNum);
+        var Block = SERVER.ReadBlockDB(ParseNum(Params.BlockNum));
         if(Block && Block.arrContent)
         {
-            var Body = Block.arrContent[Params.TrNum];
+            var Body = Block.arrContent[ParseNum(Params.TrNum)];
             if(Body)
             {
                 var Type = Body[0];
@@ -244,22 +248,22 @@ HTTPCaller.DappBlockFile = function (Params)
     return {result:0};
 };
 var glBlock0;
-HTTPCaller.DappCall = function (Data)
+HTTPCaller.DappStaticCall = function (Params)
 {
     DApps.Accounts.BeginBlock();
     DApps.Accounts.BeginTransaction();
-    global.TickCounter = 1000000;
-    var Account = DApps.Accounts.ReadStateTR(Data.Account);
+    global.TickCounter = 100000;
+    var Account = DApps.Accounts.ReadStateTR(ParseNum(Params.Account));
     if(!Account)
     {
-        return {result:0, RetValue:"Error account Num: " + Data.Account};
+        return {result:0, RetValue:"Error account Num: " + Params.Account};
     }
     if(!glBlock0)
         glBlock0 = SERVER.ReadBlockHeaderDB(0);
     var RetValue;
     try
     {
-        RetValue = RunSmartMethod(glBlock0, Account.Value.Smart, Account, 0, 0, undefined, Data.MethodName, Data.Params, 1);
+        RetValue = RunSmartMethod(glBlock0, Account.Value.Smart, Account, 0, 0, undefined, Params.MethodName, Params.Params, 1);
     }
     catch(e)
     {
@@ -267,9 +271,9 @@ HTTPCaller.DappCall = function (Data)
     }
     return {result:1, RetValue:RetValue};
 };
-HTTPCaller.DappInfo = function (Params)
+HTTPCaller.DappInfo = function (Params,responce,ObjectOnly)
 {
-    var Account, Smart = DApps.Smart.ReadSimple(Params.Smart);
+    var Account, Smart = DApps.Smart.ReadSimple(ParseNum(Params.Smart));
     if(Smart)
     {
         delete Smart.HTML;
@@ -287,11 +291,32 @@ HTTPCaller.DappInfo = function (Params)
         }
     }
     var WLData = HTTPCaller.DappWalletList(Params);
-    var Ret = {result:1, Smart:Smart, Account:Account, BlockNumDB:SERVER.BlockNumDB, CurBlockNum:GetCurrentBlockNumByTime(), MaxAccID:DApps.Accounts.GetMaxAccount(),
-        MaxDappsID:DApps.Smart.GetMaxNum(), CurTime:Date.now(), DELTA_CURRENT_TIME:DELTA_CURRENT_TIME, MIN_POWER_POW_TR:MIN_POWER_POW_TR,
-        FIRST_TIME_BLOCK:FIRST_TIME_BLOCK, CONSENSUS_PERIOD_TIME:CONSENSUS_PERIOD_TIME, MIN_POWER_POW_ACC_CREATE:MIN_POWER_POW_ACC_CREATE,
-        WalletList:WLData.arr, WalletIsOpen:(WALLET.WalletOpen !== false), WalletCanSign:(WALLET.WalletOpen !== false && WALLET.KeyPair.WasInit),
-        PubKey:WALLET.KeyPair.PubKeyStr, ArrLog:ArrLogClient, PRICE_DAO:PRICE_DAO(SERVER.BlockNumDB), };
+    var EData = HTTPCaller.LoopEvent(Params);
+    var ArrLog = [];
+    for(var i = 0; i < ArrLogClient.length; i++)
+    {
+        var Item = ArrLogClient[i];
+        if(!Item.final)
+            continue;
+        ArrLog.push(Item);
+    }
+    var Ret = {result:1, DELTA_CURRENT_TIME:DELTA_CURRENT_TIME, MIN_POWER_POW_TR:MIN_POWER_POW_TR, FIRST_TIME_BLOCK:FIRST_TIME_BLOCK,
+        CONSENSUS_PERIOD_TIME:CONSENSUS_PERIOD_TIME, MIN_POWER_POW_ACC_CREATE:MIN_POWER_POW_ACC_CREATE, PRICE_DAO:PRICE_DAO(SERVER.BlockNumDB),
+        Smart:Smart, Account:Account, ArrWallet:WLData.arr, ArrEvent:EData.arr, ArrLog:ArrLog, };
+    if(global.WALLET)
+    {
+        Ret.WalletIsOpen = (WALLET.WalletOpen !== false);
+        Ret.WalletCanSign = (WALLET.WalletOpen !== false && WALLET.KeyPair.WasInit);
+        Ret.PubKey = WALLET.KeyPair.PubKeyStr;
+    }
+    if(!ObjectOnly)
+    {
+        Ret.CurTime = Date.now();
+        Ret.CurBlockNum = GetCurrentBlockNumByTime();
+        Ret.BlockNumDB = SERVER.BlockNumDB;
+        Ret.MaxAccID = DApps.Accounts.GetMaxAccount();
+        Ret.MaxDappsID = DApps.Smart.GetMaxNum();
+    }
     return Ret;
 };
 HTTPCaller.DappWalletList = function (Params)
@@ -332,9 +357,9 @@ HTTPCaller.LoopEvent = function (Params)
 {
     if(!global.TX_PROCESS || !global.TX_PROCESS.Worker)
         return {result:0};
-    global.TX_PROCESS.Worker.send({cmd:"SetSmartEvent", Smart:Params.Smart});
-    var Arr = global.EventMap[Params.Smart];
-    global.EventMap[Params.Smart] = [];
+    global.TX_PROCESS.Worker.send({cmd:"SetSmartEvent", Smart:ParseNum(Params.Smart)});
+    var Arr = global.EventMap[ParseNum(Params.Smart)];
+    global.EventMap[ParseNum(Params.Smart)] = [];
     if(!Arr || Arr.length === 0)
     {
         return {result:0};

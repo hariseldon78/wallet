@@ -375,7 +375,10 @@ class SmartApp extends require("./dapp")
     GetRows(start, count, Filter, Category, GetAllData, bTokenGenerate)
     {
         if(Filter)
+        {
+            Filter = Filter.trim()
             Filter = Filter.toUpperCase()
+        }
         if(Category)
             Category = ParseNum(Category)
         var WasError = 0;

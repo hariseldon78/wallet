@@ -895,6 +895,10 @@ class AccountApp extends require("./dapp")
     }
     GetRowsAccounts(start, count, Filter, bGetState)
     {
+        if(Filter)
+        {
+            Filter = Filter.trim()
+        }
         var F;
         if(Filter && Filter.substring(0, 1) === "=")
         {

@@ -13,7 +13,7 @@
         var NodesMap={};
         function DrawMap()
         {
-            var obj = document.getElementById("idMap");
+            var obj = $("idMap");
             var ctx     = obj.getContext('2d');
             ctx.fillStyle = "#030a29";
             ctx.fillRect(0, 0, obj.width, obj.height);
@@ -38,8 +38,8 @@
             {
                 Count++;
                 var Item=NodesMap[key];
-                var y=Math.trunc(obj.height-(obj.height-PointC.y+KY*obj.height*(Item.latitude/10000-90)/180));
-                var x=Math.trunc(PointC.x+KX*obj.width*(Item.longitude/10000-180)/360);
+                var y=Math.floor(obj.height-(obj.height-PointC.y+KY*obj.height*(Item.latitude/10000-90)/180));
+                var x=Math.floor(PointC.x+KX*obj.width*(Item.longitude/10000-180)/360);
                 if(Item.longitude/10000-180<-20)
                     x+=25;
 
@@ -104,12 +104,29 @@
             SetStatus("Nodes count: "+Count);
 
             if(!WasMapDisplay)
-                $("idMapAll").style="display:block";
+                SetVisibleBlock("idMapAll",true);
             WasMapDisplay=1;
         }
         function $(id)
         {
             return document.getElementById(id);
+        }
+        function SetVisibleBlock(name,bSet)
+        {
+            var Item=$(name);
+            if(bSet && typeof bSet==="string")
+                Item.style.display = bSet;
+            else
+            if(bSet)
+            {
+                Item.style.display = 'block';
+                DoStableScroll();
+            }
+            else
+            {
+                Item.style.display = 'none';
+            }
+            return Item;
         }
 
         function SetStatus(Str)
@@ -153,7 +170,6 @@
             {
                 SetDiagramMouseX(event);
             }
-
         }
 
 

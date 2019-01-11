@@ -25,9 +25,9 @@ function SUB(N,C)
 
 function DIV(N,C)
 {
-    N.SumCOIN = N.SumCOIN / C, N.SumCENT = Math.trunc(N.SumCENT / C);
-    var S = Math.trunc(N.SumCOIN), u = Math.trunc((N.SumCOIN - S) * MAX_SUM_CENT);
-    return N.SumCOIN = S, N.SumCENT = N.SumCENT + u, N.SumCENT >= MAX_SUM_CENT && (N.SumCENT -= MAX_SUM_CENT, N.SumCOIN++), !0;
+    N.SumCOIN = N.SumCOIN / C, N.SumCENT = Math.floor(N.SumCENT / C);
+    var S = Math.floor(N.SumCOIN), O = Math.floor((N.SumCOIN - S) * MAX_SUM_CENT);
+    return N.SumCOIN = S, N.SumCENT = N.SumCENT + O, N.SumCENT >= MAX_SUM_CENT && (N.SumCENT -= MAX_SUM_CENT, N.SumCOIN++), !0;
 };
 
 function FLOAT_FROM_COIN(N)
@@ -37,8 +37,8 @@ function FLOAT_FROM_COIN(N)
 
 function COIN_FROM_FLOAT(N)
 {
-    var C = Math.trunc(N), S = {SumCOIN:C, SumCENT:Math.trunc((N - C) * MAX_SUM_CENT)}, u = FLOAT_FROM_COIN(S);
-    if(u != u)
+    var C = Math.floor(N), S = {SumCOIN:C, SumCENT:Math.floor((N - C) * MAX_SUM_CENT)}, O = FLOAT_FROM_COIN(S);
+    if(O != O)
         throw "ERR CHECK COIN_FROM_FLOAT";
     return S;
 };

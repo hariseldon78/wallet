@@ -601,13 +601,13 @@ function UpdateMerklTree(Tree,CalcMap,NumLevel)
                 HashArr2 = [];
                 Tree.LevelsHash[NumLevel + 1] = HashArr2;
             }
-            var len2 = Math.trunc(HashArr.length / 2);
-            HashArr2.length = Math.trunc(0.5 + HashArr.length / 2);
+            var len2 = Math.floor(HashArr.length / 2);
+            HashArr2.length = Math.floor(0.5 + HashArr.length / 2);
             var Count = 0;
             var LastIndex = HashArr.length - 1;
             for(var key in CalcMap)
             {
-                var i2 = Math.trunc(key / 2);
+                var i2 = Math.floor(key / 2);
                 if(i2 < len2)
                 {
                     Count++;
@@ -662,12 +662,12 @@ function UpdateMerklTreeErrr(Tree,CalcMap,NumLevel)
                 HashArr2 = [];
                 Tree.LevelsHash[NumLevel + 1] = HashArr2;
             }
-            var len2 = Math.trunc(HashArr.length / 2);
+            var len2 = Math.floor(HashArr.length / 2);
             var Count = 0;
             var LastIndex = HashArr.length - 1;
             for(var key in CalcMap)
             {
-                var i = Math.trunc(key / 2);
+                var i = Math.floor(key / 2);
                 if(i < len2)
                 {
                     Count++;
@@ -728,7 +728,7 @@ function UpdateMerklTree0(Tree,NumLevel)
                 CalcArr2 = [];
                 Tree.LevelsCalc[NumLevel + 1] = CalcArr2;
             }
-            var len2 = Math.trunc(HashArr.length / 2);
+            var len2 = Math.floor(HashArr.length / 2);
             var Count = 0;
             for(var i = 0; i < len2; i++)
             {

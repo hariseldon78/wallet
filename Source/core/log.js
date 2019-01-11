@@ -46,7 +46,7 @@ CheckSizeLogFile(file_name_error, file_name_errorPrev), global.ToLog = function 
 }, global.ToError = function (t)
 {
     ToLogFile(file_name_error, t);
-}, global.ArrLogClient = [], global.ToLogClient = ToLogClient;
+}, global.ArrLogClient = [], global.ToLogClient = ToLogClient, global.ToLogClient0 = ToLogClient;
 var CONTEXT_STATS = {Total:{}, Interval:[]}, CONTEXT_ERRORS = {Total:{}, Interval:[]}, CurStatIndex = 0;
 
 function GetCurrentStatIndex()
