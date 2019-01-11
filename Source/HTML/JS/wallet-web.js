@@ -115,29 +115,30 @@ function FindLider()
     var e = [], t = {};
     for(var o in ServerMap)
     {
-        if((i = ServerMap[o]).GetWalletInfo)
+        if((S = ServerMap[o]).GetWalletInfo && S.BlockChain)
         {
-            if(i.SumPower = CalcPowFromBlockChain(i.BlockChain.data), i.SumPower < MIN_SUM_POWER)
+            var r = S.BlockChain;
+            if(r.data && (r = r.data), S.SumPower = CalcPowFromBlockChain(r), S.SumPower < MIN_SUM_POWER)
             {
-                console.log("Skip: " + i.ip + ":" + i.port + " SumPower(" + i.SumPower + ") < MIN_SUM_POWER(" + MIN_SUM_POWER + ")");
+                console.log("Skip: " + S.ip + ":" + S.port + " SumPower(" + S.SumPower + ") < MIN_SUM_POWER(" + MIN_SUM_POWER + ")");
                 continue;
             }
-            t[i.SumPower] || (t[i.SumPower] = 0), t[i.SumPower]++, e.push(i);
+            t[S.SumPower] || (t[S.SumPower] = 0), t[S.SumPower]++, e.push(S);
         }
     }
-    var r, n = 0;
+    var n, a = 0;
     for(var o in t)
-        t[o] >= n && (n = t[o], r = parseInt(o));
+        t[o] >= a && (a = t[o], n = parseInt(o));
     e.sort(function (e,t)
     {
         return e.DeltaTime - t.DeltaTime;
     });
-    for(var a = 0; a < e.length; a++)
+    for(var i = 0; i < e.length; i++)
     {
-        var i;
-        if((i = e[a]).SumPower === r)
+        var S;
+        if((S = e[i]).SumPower === n)
         {
-            SetStatus("Find " + i.ip + ":" + i.port + " with pow=" + i.SumPower + " " + n + "  ping=" + i.DeltaTime), MainServer = i, SaveServerMap();
+            SetStatus("Find " + S.ip + ":" + S.port + " with pow=" + S.SumPower + " " + a + "  ping=" + S.DeltaTime), MainServer = S, SaveServerMap();
             break;
         }
     }
