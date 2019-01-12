@@ -288,16 +288,20 @@
                     return;
                 }
                 SetStatus("Calculate Tx, wait pls ...");
-                setTimeout(()=>
-                {
-                    SendTrCreateAcc(Currency,$("idPubKey").value,Name,0,Smart,0,0);
-                },50)
+                SendTrCreateAccWait(Currency,Name,Smart);
             }
             SetVisibleBlock("idAccountEdit",0)
         }
         function CancelCreateAccount()
         {
             SetVisibleBlock("idAccountEdit",0)
+        }
+        function SendTrCreateAccWait(Currency,Name,Smart)
+        {
+            setTimeout(function ()
+            {
+                SendTrCreateAcc(Currency,$("idPubKey").value,Name,0,Smart,0,0);
+            },50)
         }
 
 
