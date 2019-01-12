@@ -57,7 +57,18 @@
         }
         function OnFindServer()
         {
+            if(!MainServer)
+            {
+                SetStatus("Server not found");
+                delete localStorage["MainServer"];
+                return;
+            }
+
             localStorage["MainServer"]=JSON.stringify(MainServer);//for use in dapp
+
+            //currency fill
+            FillCurrencyAsync("idAccountCur");
+
         }
 
         function LoadValues()
@@ -167,7 +178,9 @@
         function SetVisibleItemsKeys(EditFlag)
         {
             if(EditFlag)
+            {
                 $("idPrivKeyEdit").value=$("idPrivKey").value;
+            }
             SetPubKey(EditFlag);
             var StrNo="none",StrYes="table-row";
 
@@ -196,6 +209,11 @@
                     Str="OK. Using Private key.";
                 }
                 $("idPrivKeyButton").innerHTML=Str;
+            }
+
+            if(EditFlag)
+            {
+                $("idPrivKeyEdit").focus();
             }
         }
         function SetPubKey(EditFlag)
@@ -248,7 +266,8 @@
         //Accounts
         function ViewNewAccount()
         {
-            SetVisibleBlock("idAccountEdit",1)
+            SetVisibleBlock("idAccountEdit",1);
+            $("idAccountName").focus();
         }
         function OnSetAccount(FlagOK)
         {
@@ -260,16 +279,19 @@
                     OnPrivKeyOK();
                 }
 
-                var Name=document.getElementById("idAccountName").value;
+                var Name=$("idAccountName").value;
                 var Smart=0;
-                var Currency=0;
+                var Currency=ParseNum($("idAccountCur").value);
                 if(!Name)
                 {
                     SetError("Enter the account name.");
                     return;
                 }
-
-                SendTrCreateAcc(Currency,$("idPubKey").value,Name,0,Smart,0,0);
+                SetStatus("Calculate Tx, wait pls ...");
+                setTimeout(()=>
+                {
+                    SendTrCreateAcc(Currency,$("idPubKey").value,Name,0,Smart,0,0);
+                },50)
             }
             SetVisibleBlock("idAccountEdit",0)
         }
@@ -714,7 +736,12 @@
                         </td>
                         <td>
                             <DIV id="idAccountEdit" style="display: none;">
-                                Account name (public):<INPUT class="bigs" style="width: 180px" type="string" id="idAccountName">
+                                Public name:<INPUT class="bigs" style="width: 180px" type="string" id="idAccountName">
+                                Currency:
+                                <select size="1" id="idAccountCur" class="bigs" style="width: 80px">
+                                    <option value="0">TERA</option>
+                                </select>
+
                                 <button onclick="OnSetAccount(1)" class="btkey bigs">OK</button>
                                 <button onclick="OnSetAccount(0)" class="btkey bigs">Cancel</button>
                             </DIV>

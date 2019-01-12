@@ -168,13 +168,16 @@ module.exports = class CMessages extends require("./transaction-validator")
         {
             if(delta < 15)
             {
+                let TR = Tr;
                 let SELF = this;
                 setTimeout(function ()
                 {
-                    SELF.AddTransaction(Tr, ToAll)
-                }, (delta - 1) * 1000)
-                if(ToAll)
-                    ToLogClient("#2 Added " + TrName(Tr) + "  for block: " + Tr.num + " to timer. Send transaction after " + (delta - 1) + " sec")
+                    var Res = SELF.AddTransaction(TR, TR.ToAll);
+                    if(TR.ToAll)
+                        ToLogClient("#3 Added " + TrName(TR) + "  for block: " + TR.num + " on timer Res=" + Res)
+                }, (delta - 3) * 1000)
+                if(Tr.ToAll)
+                    ToLogClient("#2 Added " + TrName(Tr) + "  for block: " + Tr.num + " to timer. Send transaction after " + (delta - 3) + " sec")
                 return 4;
             }
             return  - 3;

@@ -460,32 +460,32 @@ function SetGridData(e,t,r,n,a)
     glWorkNum++;
     for(var u = {SumCOIN:0, SumCENT:0}, l = o.rows[0].cells, c = l.length, s = 0; e && s < e.length; s++)
     {
-        var g = e[s], m = g.Num;
-        if(o.MaxNum = g.Num, !(y = i[m]))
+        var m = e[s], g = m.Num;
+        if(o.MaxNum = m.Num, !(d = i[g]))
         {
-            o.RowCount++, y = a ? o.insertRow(1) : o.insertRow( - 1), i[m] = y;
+            o.RowCount++, d = a ? o.insertRow(1) : o.insertRow( - 1), i[g] = d;
             for(var p = 0; p < c; p++)
             {
                 if("" != (v = l[p]).innerText)
-                    v.F = CreateEval(v.id, "Item"), "(" === v.id.substr(0, 1) && (v.H = 1), (f = y.insertCell(p)).className = v.className;
+                    v.F = CreateEval(v.id, "Item"), "(" === v.id.substr(0, 1) && (v.H = 1), (f = d.insertCell(p)).className = v.className;
             }
         }
-        y.Work = glWorkNum, CUR_ROW = y;
+        d.Work = glWorkNum, CUR_ROW = d;
         for(p = 0; p < c; p++)
         {
-            var f, v, d;
-            if(f = y.cells[p])
+            var f, v, S;
+            if(f = d.cells[p])
                 if((v = l[p]).H)
-                    (d = "" + v.F(g)).trim(), f.innerHTML !== d && (f.innerHTML = d);
+                    (S = "" + v.F(m)).trim(), f.innerHTML !== S && (f.innerHTML = S);
                 else
-                    (d = "" + v.F(g)).trim(), f.innerText !== d && (f.innerText = d);
+                    (S = "" + v.F(m)).trim(), f.innerText !== S && (f.innerText = S);
         }
-        r && 0 === g.Currency && ADD(u, g.Value);
+        r && 0 === m.Currency && ADD(u, m.Value);
     }
-    for(var S in i)
+    for(var y in i)
     {
-        var y;
-        (y = i[S]).Work !== glWorkNum && (o.deleteRow(y.rowIndex), delete i[S]);
+        var d;
+        (d = i[y]).Work !== glWorkNum && (o.deleteRow(d.rowIndex), delete i[y]);
     }
     r && (document.getElementById(r).innerText = "Total: " + SUM_TO_STRING(u, 0));
     DoStableScroll();
@@ -654,6 +654,24 @@ function CurrencyName(e)
     }), r = GetTokenName(e, "")), r;
 };
 
+function FillCurrencyAsync(a,e)
+{
+    e || (e = 8);
+    GetData("DappSmartList", {StartNum:e, CountNum:20, TokenGenerate:1}, function (e)
+    {
+        if(e && e.result && e.arr)
+        {
+            for(var t = 0, r = 0; r < e.arr.length; r++)
+            {
+                var n = e.arr[r];
+                MapCurrency[n.Num] || (Name = GetTokenName(n.Num, n.ShortName), MapCurrency[n.Num] = Name), n.Num > t && (t = n.Num);
+            }
+            FillSelect(a, MapCurrency, 1), 20 === e.arr.length && t && (SetStatus("Cet currency in next iteration: " + (t + 1)), FillCurrencyAsync(a,
+            t + 1));
+        }
+    });
+};
+
 function FillSelect(e,t,r)
 {
     var n = $(e), a = n.value, o = n.options, i = JSON.stringify(t);
@@ -754,12 +772,12 @@ function SendTransaction(o,i,u,l)
         {
             if(e)
             {
-                var t = GetHexFromArr(shaarr(o));
+                var t = GetHexFromArr(sha3(o));
                 if(window.SetStatus && SetStatus("Send '" + t.substr(0, 16) + "' result:" + e.text), "Not add" === e.text)
                     r(1, n + 1);
                 else
                 {
-                    var t = GetHexFromArr(shaarr(o));
+                    var t = GetHexFromArr(sha3(o));
                     MapSendTransaction[t] = i, l && l(0, i, o);
                 }
             }

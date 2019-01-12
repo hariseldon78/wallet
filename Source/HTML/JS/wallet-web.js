@@ -43,7 +43,7 @@ function SaveServerMap()
 
 function SetStatus(e)
 {
-    $("idStatus").innerHTML = e;
+    $("idStatus").innerHTML = e, console.log(e);
 };
 
 function SetError(e,t)
@@ -111,7 +111,7 @@ function DoWalletInfo(t)
 
 function FindLider()
 {
-    MainServer = void 0, SetStatus("Server not found");
+    MainServer = void 0;
     var e = [], t = {};
     for(var o in ServerMap)
     {

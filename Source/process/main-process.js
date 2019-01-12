@@ -31,7 +31,7 @@ if(VerArr[0] < 8)
 var CServer = require("../core/server");
 setTimeout(function ()
 {
-    TestSignLib(350);
+    TestSignLib(400);
 }, 4000);
 global.glCurNumFindArr = 0;
 global.ArrReconnect = [];
