@@ -108,7 +108,7 @@ module.exports = class CSmartContract extends require("./block-exchange")
                 if(App)
                 {
                     DApps.Accounts.BeginTransaction()
-                    var StrHex = GetHexFromArr(shaarr(arr[i]));
+                    var StrHex = GetHexFromArr(sha3(arr[i]));
                     var item = global.TreeFindTX.LoadValue(StrHex);
                     global.CurTrItem = item
                     var Result = App.OnWriteTransaction(Block, arr[i], BlockNum, i);

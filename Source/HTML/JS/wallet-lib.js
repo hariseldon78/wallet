@@ -270,7 +270,7 @@ function SendMoneyTR(e)
             var a = MapAccounts[t.FromID];
             if(a)
             {
-                var r = GetHexFromArr(shaarr(n)), i = GetCurrentBlockNumByTime();
+                var r = GetHexFromArr(sha3(n)), i = GetCurrentBlockNumByTime();
                 a.LastTransactionText = GetTransactionText(t), a.NextSendTime = i + 10, MapCheckTransaction[r] = a, CheckSending();
             }
         }

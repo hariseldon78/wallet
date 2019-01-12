@@ -116,17 +116,6 @@ function OnMessageWeb(msg)
 {
     switch(msg.cmd)
     {
-        case "SendTransactionHex":
-            {
-                var body = GetArrFromHex(msg.Value);
-                if(global.TX_PROCESS && global.TX_PROCESS.Worker)
-                {
-                    var StrHex = GetHexFromArr(shaarr(body));
-                    global.TX_PROCESS.Worker.send({cmd:"FindTX", TX:StrHex});
-                }
-                SERVER.AddTransaction({body:body}, 1);
-                break;
-            }
         case "SetSmartEvent":
             {
                 if(global.TX_PROCESS && global.TX_PROCESS.Worker)
@@ -137,6 +126,24 @@ function OnMessageWeb(msg)
             }
     }
 };
+
+function AddTransactionFromWeb(HexValue)
+{
+    var body = GetArrFromHex(HexValue);
+    if(global.TX_PROCESS && global.TX_PROCESS.Worker)
+    {
+        var StrHex = GetHexFromArr(sha3(body));
+        global.TX_PROCESS.Worker.send({cmd:"FindTX", TX:StrHex});
+    }
+    var Res = SERVER.AddTransaction({body:body}, 1);
+    var text = AddTrMap[Res];
+    var final = false;
+    if(Res <= 0 && Res !==  - 3)
+        final = true;
+    ToLogClient("Send: " + text, GetHexFromArr(sha3(body)), final);
+    return text;
+};
+global.AddTransactionFromWeb = AddTransactionFromWeb;
 global.STATIC_PROCESS = {Name:"STATIC PROCESS", idInterval:0, idInterval1:0, idInterval2:0, LastAlive:Date.now(), Worker:undefined,
     Path:"./process/static-process.js", OnMessage:OnMessageStatic, PeriodAlive:3000};
 ArrChildProcess.push(STATIC_PROCESS);
@@ -243,40 +250,52 @@ function StartChildProcess(Item)
             {
                 if(ITEM.LastAlive < Date.now())
                     ITEM.LastAlive = Date.now();
-                if(msg.cmd === "retcall")
+                switch(msg.cmd)
                 {
-                    var F = GlobalRunMap[msg.id];
-                    if(F)
-                    {
-                        delete GlobalRunMap[msg.id];
-                        F(msg.Err, msg.Params);
-                    }
-                }
-                else
-                    if(msg.cmd === "log")
-                    {
-                        ToLog(msg.message);
-                    }
-                    else
-                        if(msg.cmd === "ToLogClient")
+                    case "call":
+                        var Err = 0;
+                        var Ret;
+                        try
                         {
-                            if(WebProcess && WebProcess.Worker)
-                            {
-                                WebProcess.Worker.send(msg);
-                            }
-                            ToLogClient(msg.Str, msg.StrKey, msg.bFinal);
+                            Ret = global[msg.Name](msg.Params);
                         }
-                        else
-                            if(msg.cmd === "online")
-                            {
-                                if(ITEM.Worker)
-                                    ToLog("RUNING " + ITEM.Name + " : " + msg.message + " pid: " + ITEM.Worker.pid);
-                            }
-                            else
-                                if(ITEM.OnMessage)
-                                {
-                                    ITEM.OnMessage(msg);
-                                }
+                        catch(e)
+                        {
+                            Err = 1;
+                            Ret = "" + e;
+                        }
+                        if(msg.id && ITEM.Worker)
+                            ITEM.Worker.send({cmd:"retcall", id:msg.id, Err:Err, Params:Ret});
+                        break;
+                    case "retcall":
+                        var F = GlobalRunMap[msg.id];
+                        if(F)
+                        {
+                            delete GlobalRunMap[msg.id];
+                            F(msg.Err, msg.Params);
+                        }
+                        break;
+                    case "log":
+                        ToLog(msg.message);
+                        break;
+                    case "ToLogClient":
+                        if(WebProcess && WebProcess.Worker)
+                        {
+                            WebProcess.Worker.send(msg);
+                        }
+                        ToLogClient(msg.Str, msg.StrKey, msg.bFinal);
+                        break;
+                    case "online":
+                        if(ITEM.Worker)
+                            ToLog("RUNING " + ITEM.Name + " : " + msg.message + " pid: " + ITEM.Worker.pid);
+                        break;
+                    default:
+                        if(ITEM.OnMessage)
+                        {
+                            ITEM.OnMessage(msg);
+                        }
+                        break;
+                }
             });
         }
     }, 500);

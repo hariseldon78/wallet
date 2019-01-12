@@ -441,6 +441,17 @@ function GetCountMiningCPU()
     }
 };
 global.GetCountMiningCPU = GetCountMiningCPU;
+var AddTrMap = {};
+AddTrMap[ - 4] = "Bad type transaction";
+AddTrMap[ - 3] = "Bad time";
+AddTrMap[ - 2] = "Bad PoW";
+AddTrMap[ - 1] = "Bad length";
+AddTrMap[0] = "Not add";
+AddTrMap[1] = "OK";
+AddTrMap[2] = "Update OK";
+AddTrMap[3] = "Was send";
+AddTrMap[4] = "Added to timer";
+global.AddTrMap = AddTrMap;
 
 function GrayConnect()
 {

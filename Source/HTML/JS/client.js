@@ -461,20 +461,20 @@ function SetGridData(e,t,r,n,a)
     for(var u = {SumCOIN:0, SumCENT:0}, l = o.rows[0].cells, c = l.length, s = 0; e && s < e.length; s++)
     {
         var m = e[s], g = m.Num;
-        if(o.MaxNum = m.Num, !(d = i[g]))
+        if(o.MaxNum = m.Num, !(y = i[g]))
         {
-            o.RowCount++, d = a ? o.insertRow(1) : o.insertRow( - 1), i[g] = d;
+            o.RowCount++, y = a ? o.insertRow(1) : o.insertRow( - 1), i[g] = y;
             for(var p = 0; p < c; p++)
             {
                 if("" != (v = l[p]).innerText)
-                    v.F = CreateEval(v.id, "Item"), "(" === v.id.substr(0, 1) && (v.H = 1), (f = d.insertCell(p)).className = v.className;
+                    v.F = CreateEval(v.id, "Item"), "(" === v.id.substr(0, 1) && (v.H = 1), (f = y.insertCell(p)).className = v.className;
             }
         }
-        d.Work = glWorkNum, CUR_ROW = d;
+        y.Work = glWorkNum, CUR_ROW = y;
         for(p = 0; p < c; p++)
         {
             var f, v, S;
-            if(f = d.cells[p])
+            if(f = y.cells[p])
                 if((v = l[p]).H)
                     (S = "" + v.F(m)).trim(), f.innerHTML !== S && (f.innerHTML = S);
                 else
@@ -482,10 +482,10 @@ function SetGridData(e,t,r,n,a)
         }
         r && 0 === m.Currency && ADD(u, m.Value);
     }
-    for(var y in i)
+    for(var d in i)
     {
-        var d;
-        (d = i[y]).Work !== glWorkNum && (o.deleteRow(d.rowIndex), delete i[y]);
+        var y;
+        (y = i[d]).Work !== glWorkNum && (o.deleteRow(y.rowIndex), delete i[d]);
     }
     r && (document.getElementById(r).innerText = "Total: " + SUM_TO_STRING(u, 0));
     DoStableScroll();
@@ -763,7 +763,7 @@ function SendTransaction(o,i,u,l)
 {
     if(16e3 < o.length)
         return window.SetStatus && SetStatus("Error length transaction =" + o.length + " (max size=16000)"), void (l && l(1, i, o));
-    glTrSendNum++, function r(e,t)
+    glTrSendNum++, window.SetStatus && SetStatus("Prepare to sending..."), function r(e,t)
     {
         var n = t;
         e && (n = CreateHashBodyPOWInnerMinPower(o, u));
@@ -776,10 +776,12 @@ function SendTransaction(o,i,u,l)
                 if(window.SetStatus && SetStatus("Send '" + t.substr(0, 16) + "' result:" + e.text), "Not add" === e.text)
                     r(1, n + 1);
                 else
-                {
-                    var t = GetHexFromArr(sha3(o));
-                    MapSendTransaction[t] = i, l && l(0, i, o);
-                }
+                    if("Bad time" === e.text);
+                    else
+                    {
+                        var t = GetHexFromArr(sha3(o));
+                        MapSendTransaction[t] = i, l && l(0, i, o);
+                    }
             }
         });
     }(1, 0);
@@ -855,7 +857,7 @@ function GetArrFromTR(e)
 
 function GetSignTransaction(a,o)
 {
-    if(MainServer)
+    if(window.SignLib)
         if(3 === a.Version)
             for(var i = [], u = 0, e = 0; e < a.To.length; e++)
             {

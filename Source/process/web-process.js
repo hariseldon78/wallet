@@ -60,6 +60,14 @@ process.on('message', function (msg)
             if(msg.id)
                 process.send({cmd:"retcall", id:msg.id, Err:Err, Params:Ret});
             break;
+        case "retcall":
+            var F = GlobalRunMap[msg.id];
+            if(F)
+            {
+                delete GlobalRunMap[msg.id];
+                F(msg.Err, msg.Params);
+            }
+            break;
         case "Stat":
             ADD_TO_STAT(msg.Name, msg.Value);
             break;
@@ -275,10 +283,16 @@ function DoCommandNew(response,Type,Path,Params)
     if(F)
     {
         response.writeHead(200, {'Content-Type':'text/plain', 'Access-Control-Allow-Origin':"*"});
-        var Ret = F(Params);
+        var Ret = F(Params, response);
+        if(Ret === null)
+            return ;
         try
         {
-            var Str = JSON.stringify(Ret);
+            var Str;
+            if(typeof Ret === "object")
+                Str = JSON.stringify(Ret);
+            else
+                Str = Ret;
             response.end(Str);
         }
         catch(e)
@@ -370,14 +384,26 @@ HostingCaller.GetCurrentInfo = function (Params)
         MaxAccID:DApps.Accounts.GetMaxAccount(), MaxDappsID:DApps.Smart.GetMaxNum(), NETWORK:global.NETWORK, CurTime:Date.now(), DELTA_CURRENT_TIME:DELTA_CURRENT_TIME,
         MIN_POWER_POW_TR:MIN_POWER_POW_TR, FIRST_TIME_BLOCK:FIRST_TIME_BLOCK, CONSENSUS_PERIOD_TIME:CONSENSUS_PERIOD_TIME, MIN_POWER_POW_ACC_CREATE:MIN_POWER_POW_ACC_CREATE,
     };
-    if(typeof Params === "object" && Params.Diagram == true)
+    if(typeof Params === "object" && Params.Diagram)
     {
         var arrNames = ["MAX:ALL_NODES", "MAX:HASH_RATE_G"];
         Ret.arr = GET_STATDIAGRAMS(arrNames);
     }
-    if(typeof Params === "object" && Params.BlockChain == true)
+    if(typeof Params === "object" && Params.BlockChain)
     {
         Ret.BlockChain = NodeBlockChain;
+    }
+    if(typeof Params === "object" && Params.ArrLog)
+    {
+        var ArrLog = [];
+        for(var i = 0; i < ArrLogClient.length; i++)
+        {
+            var Item = ArrLogClient[i];
+            if(!Item.final)
+                continue;
+            ArrLog.push(Item);
+        }
+        Ret.ArrLog = ArrLog;
     }
     return Ret;
 };
@@ -487,7 +513,7 @@ HostingCaller.GetNodeList = function (Params)
 };
 var AccountKeyMap = {};
 var LastMaxNum = 0;
-HostingCaller.GetAccountListByKey = function (Params)
+HostingCaller.GetAccountListByKey = function (Params,ppp,bRet)
 {
     if(typeof Params !== "object" || !Params.Key)
         return {result:0, arr:[]};
@@ -534,14 +560,30 @@ HostingCaller.GetAccountListByKey = function (Params)
         if(arr.length >= 30)
             break;
     }
-    return {result:1, arr:arr};
+    var Ret = {result:1, arr:arr};
+    if(bRet)
+        return Ret;
+    var Context = GetUserContext(Params);
+    var StrInfo = JSON.stringify(Ret);
+    if(!Params.AllData && Context.PrevAccountList === StrInfo)
+    {
+        return {result:0, usebufer:1};
+    }
+    Context.PrevAccountList = StrInfo;
+    Context.NumAccountList++;
+    return StrInfo;
 };
-HostingCaller.SendTransactionHex = function (Params)
+HostingCaller.SendTransactionHex = function (Params,response)
 {
     if(typeof Params !== "object" || !Params.Hex)
         return {result:0};
-    process.send({cmd:"SendTransactionHex", Value:Params.Hex});
-    return {result:1, text:"OK"};
+    process.RunRPC("AddTransactionFromWeb", Params.Hex, function (Err,text)
+    {
+        var Result = {result:!Err, text:text};
+        var Str = JSON.stringify(Result);
+        response.end(Str);
+    });
+    return null;
 };
 HostingCaller.DappSmartHTMLFile = function (Params)
 {
@@ -577,7 +619,7 @@ HostingCaller.DappInfo = function (Params)
     var Ret = HTTPCaller.DappInfo(Params, undefined, 1);
     Ret.PubKey = undefined;
     var StrInfo = JSON.stringify(Ret);
-    if(!Params.AllData && Context.PrevDappInfo === StrInfo && Context.NumDappInfo === Context.NumDappInfo)
+    if(!Params.AllData && Context.PrevDappInfo === StrInfo)
     {
         return {result:0, usebufer:1};
     }
@@ -596,7 +638,7 @@ HostingCaller.DappWalletList = function (Params)
 {
     if(typeof Params !== "object")
         return {result:0};
-    var Ret = HostingCaller.GetAccountListByKey(Params);
+    var Ret = HostingCaller.GetAccountListByKey(Params, undefined, 1);
     var Smart = ParseNum(Params.Smart);
     var arr = [];
     for(var i = 0; i < Ret.arr.length; i++)
@@ -670,10 +712,31 @@ function GetUserContext(Params)
     var Context = WebWalletUser[Params.Key];
     if(!Context)
     {
-        Context = {NumDappInfo:0, PrevDappInfo:"", LastTime:0};
+        Context = {NumDappInfo:0, PrevDappInfo:"", NumAccountList:0, PrevAccountList:"", LastTime:0};
         WebWalletUser[Params.Key] = Context;
     }
     return Context;
+};
+var GlobalRunID = 0;
+var GlobalRunMap = {};
+process.RunRPC = function (Name,Params,F)
+{
+    if(F)
+    {
+        GlobalRunID++;
+        try
+        {
+            process.send({cmd:"call", id:GlobalRunID, Name:Name, Params:Params});
+            GlobalRunMap[GlobalRunID] = F;
+        }
+        catch(e)
+        {
+        }
+    }
+    else
+    {
+        process.send({cmd:"call", id:0, Name:Name, Params:Params});
+    }
 };
 setInterval(function ()
 {

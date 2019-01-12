@@ -17,9 +17,13 @@
     <script type="text/javascript" src="./JS/wallet-web.js"></script>
     <script type="text/javascript" src="./JS/wallet-lib.js"></script>
     <script type="text/javascript" src="./JS/diagram.js"></script>
-    <script type="text/javascript" src="./JS/sign-lib-min.js"></script>
+    <!--<script type="text/javascript" src="./JS/sign-lib-min.js"></script>-->
 
     <script>
+//        window.WEBWALLET=1;
+
+        var NumAccountList=0;
+
         //Pagination
         var SaveIdArr=["idAccount","idTo","idSumSend","idDescription","idCurTabName","idPubKey","idPrivKey","idViewBlockNum","idViewAccountNum","idViewDappNum"];
         var CONFIG_DATA={};
@@ -34,15 +38,15 @@
 
         window.onload=function()
         {
-            //LoadSignLib();
+            LoadSignLib();
 
             LoadValues();
             StartWebWallet();
 
             UpdatesExplorerData();
             UpdatesAccountsData();
-            setInterval(UpdatesExplorerData,1000);
-            setInterval(UpdatesAccountsData,1000);
+            setInterval(UpdatesExplorerData,2000);
+            setInterval(UpdatesAccountsData,2000);
 
             DoStableScroll();
 
@@ -151,16 +155,13 @@
         var FirstAccountsData=1;
         function UpdatesAccountsData()
         {
-//            if(!MainServer)
-//                return;
-
-//            if(!FirstAccountsData)
-//            if(!IsVisibleBlock("TabAccounts"))
-//                return;
-
-            GetData("/GetAccountListByKey",{Key:$("idPubKey").value}, function (Data,responseText)
+            GetData("/GetAccountListByKey",{Key:$("idPubKey").value,AllData:FirstAccountsData}, function (Data,responseText)
             {
+                if(!Data || !Data.result)
+                    return;
+
                 FirstAccountsData=0;
+                NumAccountList=Data.NumAccountList;
                 SetAccountsData(Data,responseText);
             });
         }
@@ -318,10 +319,19 @@
         //EXPLORER
         function UpdatesExplorerData()
         {
-//            if(!MainServer)
-//                return;
+            var WasSendTr=0;
+            for(var key in MapSendTransaction)
+            {
+                var Item=MapSendTransaction[key];
+                if(!Item.WasProcess && !Item.final)
+                {
+                    WasSendTr=1;
+                    break;
+                }
+            }
 
-            GetData("GetCurrentInfo",{Diagram:IsVisibleBlock("idStatBlock")}, function (Data)
+
+            GetData("GetCurrentInfo",{Diagram:IsVisibleBlock("idStatBlock"),ArrLog:WasSendTr}, function (Data)
             {
                 if(!Data || !Data.result)
                     return;
@@ -369,6 +379,49 @@
             var Str="Blockchain height: <B>"+Data.MaxNumBlockDB+"</B>  Current create: <B>"+Data.CurBlockNum+"</B> Wallet ver:"+"<B>"+StrVersion+"</B>";
             $("idCurrentBlockNum").innerHTML=Str;
 
+
+            SetArrLog(Data.ArrLog);
+
+        }
+
+
+        function SetArrLog(arr)
+        {
+            if(!arr)
+                return;
+
+            for(var i=0;i<arr.length;i++)
+            {
+                var Item=arr[i];
+                if(!Item.final)
+                    continue;
+                var TR=MapSendTransaction[Item.key];
+                if(TR && !TR.WasProcess && Item.final)
+                {
+                    TR.WasProcess=1;
+                    SetStatus(Item.text);
+
+                    if(Item.text.indexOf("Add to blockchain")>=0)
+                    {
+                        if(TR.Run)
+                        {
+                            TR.Run(TR);
+                            TR.Run=undefined;
+                        }
+                    }
+
+
+                    var Account=MapCheckTransaction[Item.key];
+                    if(Account)
+                    {
+                        delete MapCheckTransaction[Item.key];
+                        Account.NextSendTime=0;
+                    }
+
+
+                }
+            }
+            CheckSending();
         }
 
     </script>

@@ -520,16 +520,6 @@ HTTPCaller.GetSignFromHEX = function (Params)
         Sign = WALLET.GetSignFromArr(Arr);
     return {Sign:Sign, result:1};
 };
-var AddTrMap = {};
-AddTrMap[ - 4] = "Bad type transaction";
-AddTrMap[ - 3] = "Bad time";
-AddTrMap[ - 2] = "Bad PoW";
-AddTrMap[ - 1] = "Bad length";
-AddTrMap[0] = "Not add";
-AddTrMap[1] = "OK";
-AddTrMap[2] = "Update OK";
-AddTrMap[3] = "Was send";
-AddTrMap[4] = "Added to timer";
 HTTPCaller.SendTransactionHex = function (Params)
 {
     var body = GetArrFromHex(Params.Hex);
@@ -540,7 +530,7 @@ HTTPCaller.SendTransactionHex = function (Params)
     var final = false;
     if(Res <= 0 && Res !==  - 3)
         final = true;
-    ToLogClient("Send: " + Result.text, GetHexFromArr(shaarr(body)), final);
+    ToLogClient("Send: " + Result.text, GetHexFromArr(sha3(body)), final);
     return Result;
 };
 HTTPCaller.SendDirectCode = function (Params,response)
