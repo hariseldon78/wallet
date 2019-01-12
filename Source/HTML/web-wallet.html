@@ -17,7 +17,7 @@
     <script type="text/javascript" src="./JS/wallet-web.js"></script>
     <script type="text/javascript" src="./JS/wallet-lib.js"></script>
     <script type="text/javascript" src="./JS/diagram.js"></script>
-    <!--<script type="text/javascript" src="sign-lib-min.js"></script>-->
+    <script type="text/javascript" src="./JS/sign-lib-min.js"></script>
 
     <script>
         //Pagination
@@ -34,7 +34,7 @@
 
         window.onload=function()
         {
-            LoadSignLib();
+            //LoadSignLib();
 
             LoadValues();
             StartWebWallet();
@@ -122,7 +122,7 @@
             for (var i=0;i<TabArr.length;i++)
             {
                 var name=TabArr[i].name;
-                var Item=document.getElementById(name);
+                var Item=$(name);
                 if(!Item)
                     continue;
                 if(CurTabName===name)
@@ -136,7 +136,7 @@
                     str="bttab"
                 }
 
-                var ItemM=document.getElementById("M"+name);
+                var ItemM=$("M"+name);
                 if(ItemM)
                 {
                     ItemM.className=str;
@@ -367,7 +367,7 @@
 
             var StrVersion=" 0."+Data.VersionNum;
             var Str="Blockchain height: <B>"+Data.MaxNumBlockDB+"</B>  Current create: <B>"+Data.CurBlockNum+"</B> Wallet ver:"+"<B>"+StrVersion+"</B>";
-            document.getElementById("idCurrentBlockNum").innerHTML=Str;
+            $("idCurrentBlockNum").innerHTML=Str;
 
         }
 

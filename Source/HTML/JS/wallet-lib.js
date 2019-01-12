@@ -17,7 +17,7 @@ function SetAccountsData(e,t)
     if(e && e.result && t !== WasAccountsDataStr)
     {
         WasAccountsDataStr = t;
-        var n = e.arr, a = document.getElementById("idAccount");
+        var n = e.arr, a = $("idAccount");
         if(n.length !== a.options.length)
             a.options.length = n.length;
         MaxBlockNum = GetCurrentBlockNumByTime(), SetGridData(n, "grid_accounts", "idMyTotalSum");
@@ -30,21 +30,21 @@ function SetAccountsData(e,t)
             var c = a.options[r], u = GetAccountText(i, o, 1);
             c.text !== u && CheckNameAccTo(), c.value = o, c.text = u;
         }
-        var d = LoadMapAfter.idAccount;
-        d && (a.value = d, delete LoadMapAfter.idAccount), SetCurCurencyName();
+        var s = LoadMapAfter.idAccount;
+        s && (a.value = s, delete LoadMapAfter.idAccount), SetCurCurencyName();
     }
 };
 
 function CurTransactionToForm(e)
 {
-    var t = document.getElementById("idTransaction");
+    var t = $("idTransaction");
     ("" === t.className || e) && (t.value = GetJSONFromTransaction(CurrentTR));
 };
 
 function CheckNameAccTo()
 {
     MaxBlockNum = GetCurrentBlockNumByTime();
-    var e = ParseNum(document.getElementById("idTo").value);
+    var e = ParseNum($("idTo").value);
     (!MapAccounts[e] || MapAccounts[e].MustUpdate && MapAccounts[e].MustUpdate >= MaxBlockNum) && GetData("GetAccountList", {StartNum:e},
     
 function (e)
@@ -59,8 +59,7 @@ function (e)
 
 function SetNameAccTo()
 {
-    var e = ParseNum(document.getElementById("idTo").value), t = document.getElementById("idNameTo"), n = MapAccounts[e], a = "To: " + GetAccountText(n,
-    e, 1);
+    var e = ParseNum($("idTo").value), t = $("idNameTo"), n = MapAccounts[e], a = "To: " + GetAccountText(n, e, 1);
     t.innerText !== a && (t.innerText = a, n && n.MyAccount ? t.className = "smallbold" : t.className = "");
 };
 
@@ -106,22 +105,22 @@ function CreateTransaction(t,e,n)
             SetError("Valid 'Pay to' - required!");
         else
         {
-            var u = $("idDescription").value.substr(0, 200), d = $("idSumSend").value, s = d.indexOf(".");
-            if(0 <= s)
-                var m = d.substr(0, s), l = d.substr(s + 1);
+            var u = $("idDescription").value.substr(0, 200), s = $("idSumSend").value, d = s.indexOf(".");
+            if(0 <= d)
+                var S = s.substr(0, d), l = s.substr(d + 1);
             else
-                m = d, l = "0";
+                S = s, l = "0";
             l += "000000000";
-            var S = {SumCOIN:ParseNum(m), SumCENT:ParseNum(l.substr(0, 9))}, T = 0, A = MapAccounts[a];
+            var m = {SumCOIN:ParseNum(S), SumCENT:ParseNum(l.substr(0, 9))}, T = 0, A = MapAccounts[a];
             A && (T = A.Value.OperationID);
             var v = [];
             AttachItem && ((v = AttachItem.Data.Body) || (v = []));
-            var y = [];
-            o && (y = GetArrFromHex(o));
-            var N = {Type:111, Version:3, Reserve:0, FromID:a, OperationID:T, To:[{PubKey:y, ID:c, SumCOIN:S.SumCOIN, SumCENT:S.SumCENT}],
+            var N = [];
+            o && (N = GetArrFromHex(o));
+            var f = {Type:111, Version:3, Reserve:0, FromID:a, OperationID:T, To:[{PubKey:N, ID:c, SumCOIN:m.SumCOIN, SumCENT:m.SumCENT}],
                 Description:u, Body:v, Sign:CurrentTR.Sign};
-            Object.defineProperties(N, {bFindAcc:{configurable:!0, writable:!0, enumerable:!1, value:i}}), Object.defineProperties(N, {Run:{configurable:!0,
-                    writable:!0, enumerable:!1, value:n}}), JSON.stringify(N) !== JSON.stringify(CurrentTR) ? (CurrentTR = N, GetSignTransaction(N,
+            Object.defineProperties(f, {bFindAcc:{configurable:!0, writable:!0, enumerable:!1, value:i}}), Object.defineProperties(f, {Run:{configurable:!0,
+                    writable:!0, enumerable:!1, value:n}}), JSON.stringify(f) !== JSON.stringify(CurrentTR) ? (CurrentTR = f, GetSignTransaction(f,
             
 function (e)
             {
@@ -133,7 +132,7 @@ function (e)
 
 function SignJSON(t)
 {
-    if(!document.getElementById("idSignJSON").disabled)
+    if(!$("idSignJSON").disabled)
     {
         var e = GetTransactionFromJSON();
         e && (CurrentTR = e, GetSignTransaction(e, function (e)
@@ -149,25 +148,25 @@ function CheckSending(e)
     var t = IsPrivateMode(), n = "Send", a = "Sign JSON";
     if(t || (a = n = " "), t)
     {
-        var r = ParseNum(document.getElementById("idAccount").value), i = MapAccounts[r];
+        var r = ParseNum($("idAccount").value), i = MapAccounts[r];
         i && i.NextSendTime && i.NextSendTime > MaxBlockNum && (e && SetStatus("Transaction was sending. Wait... (" + i.LastTransactionText + ")"),
         t = !1, n = "Wait...");
     }
-    return document.getElementById("idSendButton").disabled = !t, document.getElementById("idSendButton").value = n, document.getElementById("idSignJSON").disabled = !t,
-    document.getElementById("idSignJSON").value = a, t;
+    return $("idSendButton").disabled = !t, $("idSendButton").value = n, $("idSignJSON").disabled = !t, $("idSignJSON").value = a,
+    t;
 };
 
 function AddWhiteList()
 {
-    var e = ParseNum(document.getElementById("idTo").value);
+    var e = ParseNum($("idTo").value);
     e && $("idWhiteOnSend").checked && (localStorage["White:" + e] = 1);
 };
 
 function SendMoneyBefore()
 {
-    if(!document.getElementById("idSendButton").disabled)
+    if(!$("idSendButton").disabled)
     {
-        var e = ParseNum(document.getElementById("idTo").value), t = MapAccounts[e];
+        var e = ParseNum($("idTo").value), t = MapAccounts[e];
         if(localStorage["White:" + e] || !$("idSumSend").value || t && t.MyAccount)
             SendMoney();
         else
@@ -186,8 +185,8 @@ function SendMoney2()
 
 function SendMoney()
 {
-    CanSendTransaction ? (CheckSending(!0), document.getElementById("idSendButton").disabled || (SetVisibleBlock("idBlockOnSend",
-    0), CreateTransaction(SendMoneyTR, !0, ClearAttach))) : SetError("Can't Send transaction");
+    CanSendTransaction ? (CheckSending(!0), $("idSendButton").disabled || (SetVisibleBlock("idBlockOnSend", 0), CreateTransaction(SendMoneyTR,
+    !0, ClearAttach))) : SetError("Can't Send transaction");
 };
 
 function GetJSONFromTransaction(e)
@@ -202,7 +201,7 @@ function GetJSONFromTransaction(e)
 
 function GetTransactionFromJSON()
 {
-    var e = document.getElementById("idTransaction").value;
+    var e = $("idTransaction").value;
     try
     {
         var t = JSON.parse(e);
@@ -288,12 +287,12 @@ function ClearTransaction()
 
 function StartEditTransactionJSON()
 {
-    document.getElementById("idTransaction").className = "smallbold";
+    $("idTransaction").className = "smallbold";
 };
 
 function EditJSONTransaction()
 {
-    var e = "edit_transaction", t = document.getElementById("idTransaction");
+    var e = "edit_transaction", t = $("idTransaction");
     IsVisibleBlock(e) ? SetVisibleBlock(e, !1) : (CreateTransaction(), SetVisibleBlock(e, !0)), t.className = "";
 };
 var glNumPayCount = 0;
@@ -365,12 +364,12 @@ function SendTrCreateAcc(e,t,n,a,r,i,o)
     var c = GetTrCreateAcc(e, t, n, a, r), u = GetBodyCreateAcc(c);
     if(c.bFindAcc = 1, o)
     {
-        var d = {name:n, To:0, Amount:CONFIG_DATA.PRICE_DAO.NewAccount, Description:"Create acc: " + n, Body:u};
-        AddToInvoiceList(d);
+        var s = {name:n, To:0, Amount:CONFIG_DATA.PRICE_DAO.NewAccount, Description:"Create acc: " + n, Body:u};
+        AddToInvoiceList(s);
     }
     else
         SendTransaction(u, c, MIN_POWER_POW_ACC_CREATE);
-    document.getElementById("idAccountName").value = "", CancelCreateAccount();
+    $("idAccountName").value = "", CancelCreateAccount();
 };
 
 function ChangeSmart(e,t)
@@ -390,7 +389,7 @@ function ChangeSmart(e,t)
 
 function CheckLengthAccDesription(e,t)
 {
-    var n = document.getElementById(e).value.substr(0, t + 1), a = t - toUTF8Array(n).length;
+    var n = $(e).value.substr(0, t + 1), a = t - toUTF8Array(n).length;
     a < 0 ? SetError("Bad length") : SetStatus("Lost: " + a + " bytes");
 };
 setInterval(CheckSendList, 200);
