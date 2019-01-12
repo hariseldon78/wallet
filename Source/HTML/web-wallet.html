@@ -296,11 +296,16 @@
         {
             SetVisibleBlock("idAccountEdit",0)
         }
+
+        var CURRENCY,NAME,SMART;
         function SendTrCreateAccWait(Currency,Name,Smart)
         {
+            CURRENCY=Currency;
+            NAME=Name;
+            SMART=Smart;
             setTimeout(function ()
             {
-                SendTrCreateAcc(Currency,$("idPubKey").value,Name,0,Smart,0,0);
+                SendTrCreateAcc(CURRENCY,$("idPubKey").value,NAME,0,SMART,0,0);
             },50)
         }
 
