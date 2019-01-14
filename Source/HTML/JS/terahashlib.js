@@ -18,17 +18,17 @@ function GetHashFromSeqAddr(r,o,a,e,t)
         var n = shaarrblock2(r, o, a);
         return {Hash:n, PowHash:n, Hash1:n, Hash2:n};
     }
-    var i = ReadUintFromArr(o, 0), A = ReadUintFromArr(o, 6), s = ReadUintFromArr(o, 12), l = ReadUintFromArr(o, 18), u = ReadUint16FromArr(o,
-    24), h = ReadUint16FromArr(o, 26), f = GetHash(r, ReadUint32FromArr(e || o, 28), a, i, A, s, l, u, h);
+    var i = ReadUintFromArr(o, 0), A = ReadUintFromArr(o, 6), l = ReadUintFromArr(o, 12), s = ReadUintFromArr(o, 18), u = ReadUint16FromArr(o,
+    24), h = ReadUint16FromArr(o, 26), f = GetHash(r, ReadUint32FromArr(e || o, 28), a, i, A, l, s, u, h);
     return t && (o[17] === t && o[23] === t || (f.PowHash = [255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
     255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255])), f;
 };
 
-function GetHash(r,o,a,e,t,n,i,A,s)
+function GetHash(r,o,a,e,t,n,i,A,l)
 {
-    DELTA_LONG_MINING < A && (A = 0), DELTA_LONG_MINING < s && (s = 0);
-    var l = GetHashFromNum2(a, o), u = GetHashFromArrNum2(r, e, t), h = GetHashFromNum3(a - A, e, n), f = GetHashFromNum3(a - s,
-    e, i), m = XORArr(l, h), H = XORArr(u, f), c = {Hash:H, Hash1:m, Hash2:H};
+    DELTA_LONG_MINING < A && (A = 0), DELTA_LONG_MINING < l && (l = 0);
+    var s = GetHashFromNum2(a, o), u = GetHashFromArrNum2(r, e, t), h = GetHashFromNum3(a - A, e, n), f = GetHashFromNum3(a - l,
+    e, i), m = XORArr(s, h), H = XORArr(u, f), c = {Hash:H, Hash1:m, Hash2:H};
     return 0 < CompareArr(m, H) ? c.PowHash = m : c.PowHash = H, BLOCKNUM_HASH_NEW <= a && (c.Hash = BLOCKNUM_TICKET_ALGO <= a ? sha3arr2(m,
     H) : shaarr2(m, H)), c;
 };
@@ -225,13 +225,15 @@ function GetBlockArrFromBuffer(r)
         {
             16 === n && (u.SumHash = ReadArrFromArr(r, 32), u.SumPow = ReadUintFromArr(r)), u.TreeHash = ReadArrFromArr(r, 32), u.AddrHash = ReadArrFromArr(r,
             32);
-            for(var i = [], A = n - 16, s = 0; s < 8; s++)
+            for(var i = [], A = n - 16, l = 0; l < 8; l++)
             {
-                var l = t[A + s];
-                i.push(l.Hash);
+                var s = t[A + l];
+                i.push(s.Hash);
             }
-            u.PrevHash = CalcHashFromArray(i, !0), u.SeqHash = GetSeqHash(u.BlockNum, u.PrevHash, u.TreeHash), CalcHashBlockFromSeqAddr(u,
-            u.PrevHash), u.Power = GetPowPower(u.PowHash), o && (u.SumHash = shaarr2(o.SumHash, u.Hash)), o = u;
+            if(u.PrevHash = CalcHashFromArray(i, !0), u.SeqHash = GetSeqHash(u.BlockNum, u.PrevHash, u.TreeHash), ReadUint32FromArr(u.PrevHash,
+            28) !== ReadUint32FromArr(u.AddrHash, 28) && global.WATCHDOG_DEV)
+                return ToError("Error on block load: " + u.BlockNum), [];
+            CalcHashBlockFromSeqAddr(u, u.PrevHash), u.Power = GetPowPower(u.PowHash), o && (u.SumHash = shaarr2(o.SumHash, u.Hash)), o = u;
         }
         u.TrCount = 0, u.TrDataPos = 0, u.TrDataLen = 0, t.push(u);
     }

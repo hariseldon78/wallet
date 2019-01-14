@@ -5,8 +5,6 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-Frame-Options" value="sameorigin">
-    <!--<title>DAPP #template-name#</title>-->
-    <!--<link rel="shortcut icon" href="#template-icon#" type="image/vnd.microsoft.icon">-->
     <title>DAPP Loading...</title>
     <link rel="shortcut icon" href="./tera.ico" type="image/vnd.microsoft.icon">
 
@@ -275,6 +273,21 @@
 
         function CreateFrame(SetData)
         {
+            if(MainServer)
+            {
+                var StrPath=GetProtocolServerPath(MainServer);
+
+                //поддрежка старого кода dapp (после обновления dapp этот код возможно будет удален)
+                SetData.Body=SetData.Body.replace(/\"\/[0-9a-z_-]+.css/g,StrPath+"./CSS/$&");
+                SetData.Body=SetData.Body.replace(/\"\/[0-9a-z_-]+.js/g,StrPath+"./JS/$&");
+
+
+                //TODO: переделать на нормальный парсинг без регулярки
+                //поддержка перенаправления в блокчейн
+                SetData.Body=SetData.Body.replace(/\/file\//g,StrPath+"/file/");
+            }
+
+
             var iframe = document.createElement('iframe');
             iframe.name = 'dapp';
             iframe.sandbox="allow-scripts";
@@ -289,7 +302,6 @@
 
             iframe.srcdoc=SetData.Body;
             document.getElementsByTagName('body')[0].appendChild(iframe);
-
         }
 
 

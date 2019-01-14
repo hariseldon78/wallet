@@ -464,21 +464,21 @@ function SetGridData(e,t,r,n,a)
         if(o.MaxNum = m.Num, !(y = i[g]))
         {
             o.RowCount++, y = a ? o.insertRow(1) : o.insertRow( - 1), i[g] = y;
-            for(var p = 0; p < c; p++)
+            for(var f = 0; f < c; f++)
             {
-                if("" != (v = l[p]).innerText)
-                    v.F = CreateEval(v.id, "Item"), "(" === v.id.substr(0, 1) && (v.H = 1), (f = y.insertCell(p)).className = v.className;
+                if("" != (v = l[f]).innerText)
+                    v.F = CreateEval(v.id, "Item"), "(" === v.id.substr(0, 1) && (v.H = 1), (p = y.insertCell(f)).className = v.className;
             }
         }
         y.Work = glWorkNum, CUR_ROW = y;
-        for(p = 0; p < c; p++)
+        for(f = 0; f < c; f++)
         {
-            var f, v, S;
-            if(f = y.cells[p])
-                if((v = l[p]).H)
-                    (S = "" + v.F(m)).trim(), f.innerHTML !== S && (f.innerHTML = S);
+            var p, v, S;
+            if(p = y.cells[f])
+                if((v = l[f]).H)
+                    (S = "" + v.F(m)).trim(), p.innerHTML !== S && (p.innerHTML = S);
                 else
-                    (S = "" + v.F(m)).trim(), f.innerText !== S && (f.innerText = S);
+                    (S = "" + v.F(m)).trim(), p.innerText !== S && (p.innerText = S);
         }
         r && 0 === m.Currency && ADD(u, m.Value);
     }
@@ -794,15 +794,18 @@ function SendCallMethod(e,t,r,n,a)
     var o = {Type:135}, i = [o.Type];
     WriteUint(i, e), WriteStr(i, t), WriteStr(i, JSON.stringify(r)), WriteUint(i, n), n ? GetData("GetAccount", n, function (e)
     {
-        if(e && 1 === e.result)
-            if(e.Item.Value.Smart === a)
-            {
-                var t = e.Item.Value.OperationID;
-                !MapSendID[n] || 8e3 < new Date - MapSendID[n].Date ? MapSendID[n] = {OperationID:t + 10} : t = MapSendID[n].OperationID, MapSendID[n].OperationID++,
-                MapSendID[n].Date = Date.now(), WriteUint(i, t), i.length += 10, SendTrArrayWithSign(i, n, o);
-            }
+        if(e && 1 === e.result && e.Item)
+            if(e.Item.Num == n)
+                if(e.Item.Value.Smart === a)
+                {
+                    var t = e.Item.Value.OperationID;
+                    !MapSendID[n] || 8e3 < new Date - MapSendID[n].Date ? MapSendID[n] = {OperationID:t + 10} : t = MapSendID[n].OperationID, MapSendID[n].OperationID++,
+                    MapSendID[n].Date = Date.now(), WriteUint(i, t), i.length += 10, SendTrArrayWithSign(i, n, o);
+                }
+                else
+                    SetStatus("Error - The account:" + n + " does not belong to a smart contract:" + a + " (have: " + e.Item.Value.Smart + ")");
             else
-                SetStatus("Error - The account:" + n + " does not belong to a smart contract:" + a);
+                SetStatus("Error read from account number: " + n + " read data=" + e.Item.Num);
         else
             SetStatus("Error account number: " + n);
     }) : (WriteUint(i, 0), i.length += 10, i.length += 64, i.length += 12, SendTransaction(i, o));

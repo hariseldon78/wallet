@@ -202,7 +202,7 @@ function MainHTTPFunction(request,response)
         {
             var Data;
             var type = postData.substring(0, 1);
-            if(postData && postData.length && (type === "{" || type === '"'))
+            if(postData && postData.length)
             {
                 try
                 {
@@ -421,6 +421,7 @@ HostingCaller.GetAccountList = function (Params)
 };
 HostingCaller.GetAccount = function (id)
 {
+    ToLog("GetAccount  id=" + id);
     id = ParseNum(id);
     var arr = DApps.Accounts.GetRowsAccounts(id, 1);
     return {Item:arr[0], result:1};
