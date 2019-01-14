@@ -195,13 +195,14 @@ function MainHTTPFunction(request,response)
         let postData = "";
         request.addListener("data", function (postDataChunk)
         {
-            if(postData.length < 500 && postDataChunk.length < 500)
+            if(postData.length <= 1024 && postDataChunk.length <= 1024)
                 postData += postDataChunk;
+            else
+                ToLog("Error postDataChunk.length=" + postDataChunk.length);
         });
         request.addListener("end", function ()
         {
             var Data;
-            var type = postData.substring(0, 1);
             if(postData && postData.length)
             {
                 try
@@ -576,7 +577,7 @@ HostingCaller.GetAccountListByKey = function (Params,ppp,bRet)
 HostingCaller.SendTransactionHex = function (Params,response)
 {
     if(typeof Params !== "object" || !Params.Hex)
-        return {result:0};
+        return {result:0, text:"object requre"};
     process.RunRPC("AddTransactionFromWeb", Params.Hex, function (Err,text)
     {
         var Result = {result:!Err, text:text};
