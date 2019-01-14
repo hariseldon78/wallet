@@ -783,6 +783,8 @@ function SendTransaction(o,i,u,l)
                         MapSendTransaction[t] = i, l && l(0, i, o);
                     }
             }
+            else
+                window.SetStatus && SetStatus("Error Data");
         });
     }(1, 0);
 };

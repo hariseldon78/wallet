@@ -132,6 +132,12 @@ function FindAllCurrency()
     });
 };
 
+function GetFilePath(e)
+{
+    return window.PROTOCOL_SERVER_PATH && e.indexOf("file/") && ("/" !== e.substr(0, 1) && (e = "/" + e), e = window.PROTOCOL_SERVER_PATH + e),
+    e;
+};
+
 function GetState(e,n,o)
 {
     SendCountUpdate++, GetAccountList({StartNum:e, CountNum:1}, function (e,t)

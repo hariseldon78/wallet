@@ -273,6 +273,7 @@
 
         function CreateFrame(SetData)
         {
+            var SriptLW="";
             if(MainServer)
             {
                 var StrPath=GetProtocolServerPath(MainServer);
@@ -285,6 +286,8 @@
                 //TODO: переделать на нормальный парсинг без регулярки
                 //поддержка перенаправления в блокчейн
                 SetData.Body=SetData.Body.replace(/\/file\/[0-9]+\/[0-9]+\">/g,StrPath+"$&");
+                SriptLW="<script>window.PROTOCOL_SERVER_PATH='"+StrPath+"';<\/script>";
+
             }
 
 
@@ -298,7 +301,7 @@
                     <script type="text/javascript" src="./JS/coinlib.js"><\/script>\
                     <script type="text/javascript" src="./JS/client.js"><\/script>\
                     <script type="text/javascript" src="./JS/dapp-inner.js"><\/script>\
-                    '+SetData.Body;
+                    '+SriptLW+SetData.Body;
 
             iframe.srcdoc=SetData.Body;
             document.getElementsByTagName('body')[0].appendChild(iframe);
@@ -412,6 +415,6 @@
     //   glDebugPath="./dapp-smart/BTC-coin.html";
     //  glDebugPath="./dapp-smart/freeze.html";
     //  glDebugPath="./dapp-smart/promise.html";
-    //{"HTMLBlock":11932440,"HTMLTr":1}
+    //{"HTMLBlock":17035437,"HTMLTr":0}
 </script>
 
