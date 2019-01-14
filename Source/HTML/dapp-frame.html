@@ -278,13 +278,13 @@
                 var StrPath=GetProtocolServerPath(MainServer);
 
                 //поддрежка старого кода dapp (после обновления dapp этот код возможно будет удален)
-                SetData.Body=SetData.Body.replace(/\"\/[0-9a-z_-]+.css/g,StrPath+"./CSS/$&");
-                SetData.Body=SetData.Body.replace(/\"\/[0-9a-z_-]+.js/g,StrPath+"./JS/$&");
+                SetData.Body=SetData.Body.replace(/\/[0-9a-z_-]+.css\">/g,StrPath+"/CSS$&");
+                SetData.Body=SetData.Body.replace(/\/[0-9a-z_-]+.js\">/g,StrPath+"/JS$&");
 
 
                 //TODO: переделать на нормальный парсинг без регулярки
                 //поддержка перенаправления в блокчейн
-                SetData.Body=SetData.Body.replace(/\/file\//g,StrPath+"/file/");
+                SetData.Body=SetData.Body.replace(/\/file\/[0-9]+\/[0-9]+\">/g,StrPath+"$&");
             }
 
 
