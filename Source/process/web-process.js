@@ -421,7 +421,6 @@ HostingCaller.GetAccountList = function (Params)
 };
 HostingCaller.GetAccount = function (id)
 {
-    ToLog("GetAccount  id=" + id);
     id = ParseNum(id);
     var arr = DApps.Accounts.GetRowsAccounts(id, 1);
     return {Item:arr[0], result:1};
