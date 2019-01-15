@@ -99,13 +99,12 @@ sudo apt-get install -y git
 sudo apt-get install -y nodejs
 sudo apt-get install -y npm
 sudo npm install pm2 -g
-sudo git clone https://github.com/terafoundation/wallet.git
-sudo apt install build-essential
-sudo apt group install "Development Tools"
+git clone https://github.com/terafoundation/wallet.git
+apt install build-essential
 cd wallet/Source
-sudo npm install
-sudo node set httpport:8080 password:<secret word (no spaces)>
-sudo pm2 start run-node.js
+npm install
+node set httpport:8080 password:<secret word (no spaces)>
+pm2 start run-node.js
 ```
 
 ### open ports:
